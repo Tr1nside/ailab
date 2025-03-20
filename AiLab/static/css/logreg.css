@@ -1,0 +1,262 @@
+div{
+    user-select: none;
+}
+
+.bg-2{
+    position: relative;
+    top: 0;
+    left: 0;
+    font-weight: 800;
+    color: black;
+    background-image: linear-gradient(0deg,  rgba(6, 6, 31, 0.575), rgba(2, 4, 34, 0.664)), url("./../img/bg1.jpg");
+    background-size: 120vw;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center center;
+}
+
+div{
+    font-size: 20pt;
+    color: white;
+    font-family: url("fonts/Intro.otf");
+}
+.text-au-reg{
+    color: black;
+    position: relative;
+    top: 10px;
+}
+.sp{
+    margin-top: 18px;
+}
+
+.form-log{
+    position: relative;
+    width: 350px;
+    height: 530px;
+    background-color: rgb(224, 224, 224);
+    border-radius: 30px;
+    z-index: 1;
+}
+
+.form-reg1{
+    position: relative;
+    width: 350px;
+    height: 530px;
+    background-color: rgb(224, 224, 224);
+    border-radius: 30px;
+    z-index: 1;
+}
+
+.form-re-log{
+    margin-top: 0px;
+}
+
+.back-but{
+    width: 50px;
+    height: 50px;
+    background-color: rgb(80, 80, 245);
+    border-radius: 100%;
+    border: 0px;
+    position: relative;
+    top: 45px;
+    left: 50px;
+}
+
+.back-but:hover{
+    width: 50px;
+    height: 50px;
+    background-color: rgb(116, 116, 240);
+    border-radius: 100%;
+    border: 0px;
+    position: relative;
+    top: 45px;
+    left: 50px;
+    animation-duration: 1000ms;
+    transition: 100ms;
+}
+
+.back-but:active{
+    width: 50px;
+    height: 50px;
+    background-color: rgb(145, 145, 255);
+    border-radius: 100%;
+    border: 0px;
+    position: relative;
+    top: 45px;
+    left: 50px;
+    animation-duration: 1.5s;
+}
+
+.arrow-but{
+    position: relative;
+    top: -3.3px;
+    left: 1px;
+    
+}
+
+.forminput{
+    color: black;
+    font-size: 20px;
+    margin-top: 10px;
+    font-weight: 700;
+    border-radius: 10px;
+    padding-left: 10px;
+    padding-bottom: 3px;
+    border-color: black;
+    background-color: rgb(241, 241, 241);
+    
+}
+
+.reg-but-click{
+    
+    margin-left: 20px;
+    width: 15px;
+    margin-top: 20px;
+    margin-right: 10px;
+}
+.text-check-but{
+    color: black;
+    font-size: 12px;
+    margin-right: 10px;
+    margin-left: 10px;
+    font-weight: 600;
+    margin-inline: 40px;
+    margin-bottom: 5px;
+    margin-top: -5px;
+    height: 77px;
+}
+.but-reg-log-style{
+    margin-bottom: 20px;
+    position:absolute;
+    font-size: 18px;
+    padding: 5px;
+    padding-inline: 10px;
+    border-radius: 15px;
+    bottom: 50px;
+    right: 70px;
+    width:210px;
+    border: 5px;
+    color: white;
+    background: linear-gradient(45deg,  rgba(132, 0, 255, 0.575), rgba(13, 29, 255, 0.664));
+}
+
+.but-reg-log-style:hover{
+    font-size: 18px;
+    padding: 5px;
+    padding-inline: 10px;
+    border-radius: 15px;
+    border: 5px;
+    color: white;
+    background: linear-gradient(45deg,  rgba(69, 0, 133, 0.575), rgba(0, 9, 136, 0.664));
+}
+.not-this{
+    font-size: 10pt;
+    position: absolute;
+    bottom: 20px;
+    left: 60px;
+    right: 60px;
+    color: rgba(0, 0, 0, 0.74);
+    user-select: none;
+}
+.not-this a{
+    color: rgba(52, 123, 255, 0.74);
+}
+.not-this a:hover{
+    color: rgba(7, 48, 126, 0.74);
+}
+
+.but-reg-log-style:active{
+    font-size: 18px;
+    padding: 5px;
+    padding-inline: 10px;
+    border-radius: 15px;
+    border: 5px;
+    color: white;
+    background: linear-gradient(45deg,  rgba(54, 0, 104, 0.575), rgba(0, 7, 100, 0.664));
+}
+
+.course-label{
+    position:relative;
+    top: 20px;
+    left: 20px;
+}
+.course-discription{
+    color: black;
+    font-size: 20px;
+    position: relative;
+    top: 20px;
+    left: 20px;
+}
+.course-button{
+    background-image: url("img/gradient_nav.png");
+    border: 1px;
+    border-radius: 10px;
+    position: relative;
+    left: 88%;
+    top: 80px;
+}
+
+.dis-links-dec{
+    text-decoration: none;
+    color: white;
+}
+
+
+
+
+.reg-1-col{
+    width: 50%;
+}
+.reg-2-col{
+    width: 50%;
+}
+.photo-edit{
+    width: 300px;
+    height: 300px;
+    margin-left: 20px;
+}
+.photo-edit-content{
+    width: 250px;
+    height: 250px;
+    margin-left: 40px;
+}
+
+.errors {
+    color: rgb(99, 50, 50);
+    font-size: 12px;
+}
+
+.input-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+.forminput {
+    width: 300px; /* Фиксированная ширина для согласованности */
+    padding-right: 35px; /* Отступ для размещения ошибки */
+}
+
+.error-tooltip {
+    visibility: hidden;
+    background-color: #f44336;
+    color: white;
+    text-align: center;
+    padding: 5px 10px;
+    border-radius: 5px;
+    position: absolute;
+    left: calc(100% + 10px); /* Справа от поля */
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
+    font-size: 12px;
+    z-index: 100;
+    opacity: 0;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+/* Показываем ошибку, если она есть */
+.input-container.has-error .error-tooltip {
+    visibility: visible;
+    opacity: 1;
+}

@@ -1,0 +1,267 @@
+body {
+    position: relative;
+    overflow-x: hidden;
+  }
+
+.wrapped-obj{
+    position: sticky;
+    top: 0px;
+    z-index: 2;
+}
+.navbar-main{
+    box-shadow: 0px 2px 4px 0px black;
+    
+}
+.nav_title{
+    white-space: nowrap;
+    text-decoration: none;
+    color: rgb(32, 73, 255);
+    font-weight: 700;
+    letter-spacing: .2rem;
+}
+.nav_title_el{
+    white-space: nowrap;
+    text-decoration: none;
+    color: black;
+    font-weight: 700;
+    letter-spacing: .1rem;
+    padding-top: 10px;
+}
+a{
+    user-select: none;
+}
+.nav-item{
+    margin-left: 25px;
+}
+.logo{
+    max-width: 250px;
+    max-height: 50px;
+    width: 100%;
+}
+
+.picture1_element {
+    width: 100%; /* Ширина подстраивается под размеры контейнера */
+    height: 92.1vh;/* Квадратные пропорции для пионеров дизайна */
+    min-height: 800px; 
+    padding-top: 100px;
+    background: linear-gradient(0deg, rgba(0, 17, 255, 0.4), rgba(0, 0, 255, 0.4)); 
+}
+.nav-link {
+    color: #black;
+}
+.img-bg1{
+    background-image:  url("img/bg1.jpg");
+    width: 100%;
+    background-size: clamp(100%, 5% + 5vw, 200%);
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    max-height: 250rem;
+    background-repeat: no-repeat;
+    z-index: 2;
+}
+.picture2_element {
+    width: 100%; /* Ширина подстраивается под размеры контейнера */
+    /* Квадратные пропорции для пионеров дизайна */
+    
+    background-color:  rgb(255, 255, 255);
+    padding-top: 100px;
+    z-index: 2;
+}
+
+.bg-color-part2{
+    background: linear-gradient(0deg,  rgba(6, 6, 31, 0.575), rgba(2, 4, 34, 0.664));
+    height: 100%;
+    position: relative;
+    color: white;
+}
+.picture3_element {
+    width: 100%; /* Ширина подстраивается под размеры контейнера */
+    height: 52rem;/* Квадратные пропорции для пионеров дизайна */
+    
+   
+    background: none;
+    z-index: 0;
+}
+.picture3_el_bg{
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    
+    height: 100vh;
+    background-repeat: no-repeat;
+    z-index: 0;
+}
+.picture4_element {
+    width: 100%; /* Ширина подстраивается под размеры контейнера */
+/* Квадратные пропорции для пионеров дизайна */
+    background-color: rgb(255, 255, 255);
+    z-index: 1;
+}
+
+.main-picture-title{
+    color: #ffffff;
+    width:calc(70% + 2vw) ;
+}
+
+.text-changing-size{
+    font-size: clamp(0.3rem, 0.8rem + 3vw, 4rem);
+    
+}
+.text-changing-size.small{
+    font-size: clamp(0.3rem, 0.8rem + 1vw, 2rem);
+    margin-top: 10vh;
+}
+
+
+.nav-link.active{
+    text-decoration:underline rgb(108, 108, 255);
+    color: rgb(108, 108, 255);
+    font-weight: 600;
+    
+}
+.pict1-button{
+    border-radius: 20px;
+    border: 1px;
+    font-weight: 600;
+    padding: 1rem;
+    padding-left: 3rem;
+    padding-right: 3rem;
+    margin-top: 3rem;
+    text-decoration: none;
+    
+}
+
+.anim-button{
+    margin-top: 5vh;
+    border: 0px;
+    border-radius: 10px;
+    background: none;
+    animation-duration: 3s;
+    animation-name: slide-in;
+    animation-iteration-count: infinite;
+    z-index: 0;
+}
+@keyframes slide-in {
+    0% {
+      translate: 0px 5px;
+      
+    }
+
+    50% {
+        translate: 0px -5px;
+        
+      }
+  
+    100% {
+        translate: 0px 5px;
+        
+    }
+  }
+
+.part2-title{
+    margin-top: 50px;
+    font-size: clamp(0.3rem, 0.8rem + 2vw, 4rem);
+    width:calc(70% + 2vw) ;
+}
+
+.part2-title.small{
+    margin-top: 50px;
+    font-size: clamp(0.3rem, 0.8rem + 1vw, 2rem);
+    width:calc(70% + 2vw) ;
+}
+.part2-img-group{
+    white-space: nowrap;
+    height: 10vh;
+}
+.part2_align{
+    margin-top: 100px;
+}
+.part2-img-group div img{
+    width: 12rem;
+    white-space: nowrap;
+    margin-top: 50px;
+}
+.text-part2-alignment{
+    white-space: wrap;
+}
+.part2-text-el{
+    font-weight: 200;
+}
+
+.part1-text-part1{
+    padding-top: 13rem;
+    font-size: clamp(1rem, 0.1rem + 1vw, 2rem);
+    width:calc(70% + 2vw) ;
+    margin-bottom: 5rem;
+    letter-spacing: .2rem;
+    font-weight: 500;
+}
+.part1-text-part2{
+    font-size: clamp(4.5rem, 1rem + 1vw, 5rem);
+    width:calc(70% + 2vw) ;
+    font-weight: 610;
+    font-style: italic;
+    margin-bottom: 2rem;
+}
+.part1-text-part3{
+    font-size: clamp(0.3rem, 0.1rem + 1vw, 2rem);
+    width:calc(40% + 2vw) ;
+    line-height: 2;
+}
+
+.part4-blocknum1{
+    position: relative;
+    height: clamp(1rem, 10rem + 4vw, 20rem);
+    top: clamp(1rem, 5rem + 2vw, 2rem);
+    
+}
+.part4-blocknum2{
+    position: relative;
+    background-color: rgb(54, 54, 54);
+    height: clamp(5rem, 5rem + 2vw, 16rem);
+    top: clamp(1rem, 5rem + 2vw, 2rem);
+    
+}
+.weight200{
+    font-weight: 200;
+}
+.weight200 a{
+    color: black;
+    text-decoration: line;
+}
+.weight700{
+    font-weight: 700;
+}
+.part4-1-1{
+    width:calc(40% + 2vw) ;
+    font-size: clamp(0.3rem, 0.1rem + 0.95vw, 2rem);
+}
+.part4-1-2{
+    width:calc(40% + 2vw) ;
+    font-size: clamp(0.3rem, 0.1rem + 0.95vw, 2rem);
+    margin-top: clamp(1rem, 0.1rem + 0.95vw, 2rem);
+}
+.part4-blocknum2.bg3{
+    width:calc(40% + 2vw) ; 
+}
+
+.bg3{
+    padding-top: 2rem;
+}
+
+.part4-blocknum2 div{
+    font-size: clamp(0.3rem, 0.1rem + 0.7vw, 2rem);
+    color: rgb(190, 190, 190);
+}
+
+.part2-img-group.row.justify-content-center{
+    min-height: 27rem;
+    height: 100%;
+    padding-bottom: 2rem;
+}
+
+.col-xxl-2{
+    margin: 2rem;
+}
+

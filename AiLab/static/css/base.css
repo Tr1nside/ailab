@@ -1,0 +1,39 @@
+/* Шапка */
+
+.header {
+    background: linear-gradient(to right, #3498db, #2c3e50);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo-block{
+    display: flex;
+}
+
+.logo-style{
+    width: 40px;
+    height: 40px;
+    /* background: linear-gradient(45deg, #30cfd0, #330867); */
+    border-radius: 5px;
+    /* rotate: 110deg; */
+}
+
+
+.header-title {
+    font-size: 34px;
+    margin-left: 1rem;
+}
+
+
+/* Подвал */
+
+.footer {
+    background-color: #a2d9ce;
+    padding: 20px;
+    border-radius: 10px;
+    margin: 20px auto;
+    width: 80%;
+}
