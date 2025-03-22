@@ -10,15 +10,6 @@ body {
 
 /* Темный режим */
 
-body.dark-mode {
-    background-color: #222;
-    color: #eee;
-}
-
-body.dark-mode .header {
-    background: linear-gradient(to right, #434343, #222222);
-    color: #fff;
-}
 
 body.dark-mode .container {
     background-color: #333;
@@ -336,13 +327,6 @@ body.dark-mode .tab.active:hover {
 
 .delete-button:hover {
     background-color: #f1c40f;
-}
-
-/* Ночной режим */
-
-.night-mode {
-    cursor: pointer;
-    font-size: 28px;
 }
 
 /* Стили для режима редактирования вкладок */

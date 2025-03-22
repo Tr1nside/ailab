@@ -29,13 +29,17 @@ main_bp = Blueprint("main_bp", __name__)  # Создаём Blueprint для ор
 def index():
     return render_template("index.html")  # Возвращаем HTML-шаблон index.html
 
+@main_bp.route('/profile/<id>')
+@login_required
+def profile(id):
+    user = db.first_or_404(sa.select(User).where(User.id == id))
+    
+    return render_template('profile.html', user=user, current_endpoint=request.endpoint)
 
-@main_bp.route(
-    "/ide"
-)  # Определяем маршрут для главной страницы, доступной по адресу http://127.0.0.1:5000/
+@main_bp.route("/ide")  # Определяем маршрут для главной страницы, доступной по адресу http://127.0.0.1:5000/
 @login_required
 def ide():
-    return render_template("ide.html")  # Возвращаем HTML-шаблон index.html
+    return render_template("ide.html", current_endpoint=request.endpoint)  # Возвращаем HTML-шаблон index.html
 
 
 @main_bp.route("/login", methods=["GET", "POST"])

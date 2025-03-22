@@ -1,5 +1,4 @@
 const body = document.body;
-const nightModeButton = document.querySelector('.night-mode');
 const tabs = document.querySelector('.tabs');
 let codeMirrorInstances = {};
 const consoleOutput = document.querySelector('.console-output');
@@ -128,48 +127,6 @@ function updateConsoleInputClass() {
 }
 updateConsoleInputClass();
 
-// Переключение между режимами
-let darkMode = false;
-if (!localStorage.getItem("darkMod")) {
-    localStorage.setItem("darkMod", false);
-    darkMode = false;
-} else {
-    darkMode = localStorage.getItem("darkMod");
-    if (darkMode) {
-        body.classList.toggle('dark-mode');
-        nightModeButton.textContent = body.classList.contains('dark-mode') ? '☀️' : '🌙';
-        for (const tabId in codeMirrorInstances) {
-            const cm = codeMirrorInstances[tabId];
-            cm.setOption("theme", body.classList.contains('dark-mode') ? "dracula" : "default");
-        }
-    }
-}
-const storedTheme = localStorage.getItem('theme');
-if (storedTheme === 'dark') {
-    body.classList.add('dark-mode');
-    nightModeButton.textContent = '☀️';
-    for (const tabId in codeMirrorInstances) {
-        const cm = codeMirrorInstances[tabId];
-        cm.setOption("theme", "dracula");
-    }
-} else {
-    body.classList.remove('dark-mode');
-    nightModeButton.textContent = '🌙';
-    for (const tabId in codeMirrorInstances) {
-        const cm = codeMirrorInstances[tabId];
-        cm.setOption("theme", "default");
-    }
-}
-nightModeButton.addEventListener('click', () => {
-    body.classList.toggle('dark-mode');
-    const isDark = body.classList.contains('dark-mode');
-    nightModeButton.textContent = isDark ? '☀️' : '🌙';
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    for (const tabId in codeMirrorInstances) {
-        const cm = codeMirrorInstances[tabId];
-        cm.setOption("theme", isDark ? "dracula" : "default");
-    }
-});
 
 // Функция для обновления номеров строк (если требуется)
 function updateLineNumbers(cm, lineNumbers) {
@@ -487,3 +444,34 @@ function copyToClipboard() {
         console.error("Ошибка при копировании: ", err);
     });
 }
+
+document.addEventListener("DOMContentLoaded", () => {
+    const nightModeButton = document.querySelector('.night-mode');
+  
+    // Инициализация темы CodeMirror из localStorage
+    const savedTheme = localStorage.getItem('cmTheme') === 'dark';
+    updateCodeMirrorTheme(savedTheme);
+  
+    // Функция для обновления темы CodeMirror
+    function updateCodeMirrorTheme(isDark) {
+      const theme = isDark ? "dracula" : "default";
+      for (const tabId in codeMirrorInstances) {
+        if (codeMirrorInstances.hasOwnProperty(tabId)) {
+          codeMirrorInstances[tabId].setOption("theme", theme);
+        }
+      }
+      localStorage.setItem('cmTheme', isDark ? 'dark' : 'light');
+    }
+  
+    // Функция переключения темы CodeMirror
+    function toggleCodeMirrorTheme() {
+      const isDark = localStorage.getItem('cmTheme') !== 'dark';
+      updateCodeMirrorTheme(isDark);
+    }
+  
+    // Назначение обработчика события
+    if (nightModeButton) {
+      nightModeButton.addEventListener('click', toggleCodeMirrorTheme);
+    }
+  });
+  

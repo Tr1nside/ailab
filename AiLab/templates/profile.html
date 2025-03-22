@@ -1,24 +1,18 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <title>Профиль</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <!-- Добавить эту кнопку в начало profile-container -->
-    <button class="theme-toggle" aria-label="Toggle theme">
-        <span class="theme-toggle-icon light-icon">🌞</span>
-        <span class="theme-toggle-icon dark-icon">🌙</span>
-    </button>
-    <div class="profile-container">
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="profile-container" id="profile-container">
         <div class="profile-card">
           <div class="profile-content">
             <div class="profile-photo-container">
               <div class="profile-media-wrapper" id="profile-media-wrapper">
                 <!-- Default image will be shown here -->
                 <img
-                  src="https://cdn.builder.io/api/v1/image/assets/TEMP/e2da710043e4586c96081718d0a1e7b92cb69ed0"
+                  src="{{ url_for('static', filename='img/test.img') }}"
                   alt="User profile media"
                   class="profile-photo"
                   id="profile-image"
@@ -45,7 +39,7 @@
               </div>
             </div>
             <div class="profile-info">
-              <h1 class="profile-name">Христос Исус Божьекоровков</h1>
+              <h1 class="profile-name">Христос Исус Сосалович</h1>
               <p class="profile-email">hesus@hristos.com</p>
               <p class="profile-phone">+7 535 353 53 53</p>
               <p class="profile-position" id="user-position">Админ</p>
@@ -66,13 +60,13 @@
             </div>
             <div class="qr-code-container">
               <img
-                src="./images.jpeg"
+                src="{{ url_for('static', filename='img/test.img') }}"
                 alt="QR code"
                 class="qr-code"
               />
               <div class="action-buttons">
                 <button class="action-button">Добавить в друзья</button>
-                <button class="action-button">Скачать визитку</button>
+                <button class="action-button" id="download-profile">Скачать визитку</button>
               </div>
             </div>
           </div>
@@ -93,7 +87,7 @@
                     <!-- Default image preview -->
                     <img
                       id="current-photo"
-                      src="https://cdn.builder.io/api/v1/image/assets/TEMP/e2da710043e4586c96081718d0a1e7b92cb69ed0"
+                      src="{{ url_for('static', filename='img/test.img') }}"
                       alt="Current profile media"
                       class="photo-preview"
                     />
@@ -126,7 +120,7 @@
                   <span>Имя</span>
                   <input
                     type="text"
-                    value="Христос Исус Божьекоровков"
+                    value="Христос Исус Сосалович"
                     class="form-input"
                     id="input-name"
                   />
@@ -146,9 +140,7 @@
                     type="tel" 
                     class="form-input"
                     id="input-phone"
-                    placeholder="+_-___-___-__-__"
                     maxlength="16"
-                    pattern="\+7-\d{3}-\d{3}-\d{2}-\d{2}"
                     required
                   >
                 </label>
@@ -192,19 +184,24 @@
                   />
                 </label>
                 <div class="form-buttons">
-                  <button class="save-button" type="submit">Сохранить</button>
-                  <button class="cancel-button" type="button" id="cancel-button">
+                  <button class="button" type="submit">Сохранить</button>
+                  <button class="button" type="button" id="cancel-button">
                     Отмена
                   </button>
-                  <button class="cancel-button" type="button" id="cancel-button">
-                    <a href="{{ url_for('main_bp.logout') }}">Logout</a>
-                  </button>
+                  
+                  <a href="{{ url_for('main_bp.logout') }}"><button class="button" type="button" id="logout-button">
+                    Logout
+                  </button></a>
                 </div>
               </div>
             </form>
           </div>
         </div>
-      </div>      
-    <script src="script.js"></script>
-</body>
-</html>
+      </div>
+    
+    {% endblock %}
+
+    {% block scripts %}
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+    {% endblock %}
+    
