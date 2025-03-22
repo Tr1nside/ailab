@@ -52,6 +52,7 @@ body.dark-mode {
 }
 
 
+
 /* Подвал */
 
 .footer {
@@ -67,7 +68,6 @@ body.dark-mode {
     height: 50px;
     border-radius: 50%;  /* Делаем круглым */
     object-fit: cover;  /* Чтобы картинка не искажалась */
-    border: 2px solid white; /* Граница, если нужна */
     transition: transform 0.2s ease-in-out;
 }
 

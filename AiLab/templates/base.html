@@ -26,7 +26,7 @@
         </div>
         {% if current_endpoint != 'main_bp.profile' %}
         <a href="{{ url_for('main_bp.profile', id=current_user.id) }}" class="profile-icon">
-            <img src="{{ url_for('static', filename='img/test.png') }}" alt="Профиль">
+            <img src="{{ url_for('static', filename='uploads/' + profile.profile_photo) }}" alt="Профиль">
         </a>    
         {% endif %}
         

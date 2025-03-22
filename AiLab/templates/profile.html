@@ -12,21 +12,11 @@
               <div class="profile-media-wrapper" id="profile-media-wrapper">
                 <!-- Default image will be shown here -->
                 <img
-                  src="{{ url_for('static', filename='img/test.img') }}"
+                  src="{{ url_for('static', filename='uploads/' + profile.profile_photo) }}"
                   alt="User profile media"
                   class="profile-photo"
                   id="profile-image"
                 />
-                <!-- Video element (hidden by default) -->
-                <video
-                  class="profile-video hidden"
-                  id="profile-video"
-                  loop
-                  muted
-                  autoplay
-                  playsinline
-                  controls
-                ></video>
               </div>
               <div class="edit-button-container">
                 <button
@@ -39,31 +29,60 @@
               </div>
             </div>
             <div class="profile-info">
-              <h1 class="profile-name">Христос Исус Сосалович</h1>
-              <p class="profile-email">hesus@hristos.com</p>
-              <p class="profile-phone">+7 535 353 53 53</p>
-              <p class="profile-position" id="user-position">Админ</p>
+              <h1 class="profile-name">{{ profile.full_name }}</h1>
+              <p class="profile-email">{{ profile.email }}</p>
+              <p class="profile-phone">{{ profile.phone }}</p>
+              <p class="profile-position" id="user-position">{{ profile.position }}</p>
               <div class="social-links">
+                {% if profile.telegram_link %}
                 <div class="social-link" id="telegram-container">
-                  <span class="social-label">Telegram:</span>
-                  <span id="telegram-id">pipisya</span>
+                  <a href="https://t.me/{{ profile.telegram_link.split('/')[-1] }}" 
+                       target="_blank" 
+                       class="social-id" 
+                       id="telegram-id">
+                    <span class="social-label">Telegram:</span>
+                      {{ profile.telegram_link.split('/')[-1] }}
+                  </a>
                 </div>
+                {% endif %}
+              
+                {% if profile.github_link %}
                 <div class="social-link" id="github-container">
-                  <span class="social-label">Github:</span>
-                  <span id="github-id">hesus</span>
+                  <a href="{{ profile.github_link }}" 
+                       target="_blank" 
+                       class="social-id" 
+                       id="github-id">
+                    <span class="social-label">Github:</span>
+                    
+                      {{ profile.github_link.split('/')[-1] }}
+                    
+                  </a>
                 </div>
+                {% endif %}
+              
+                {% if profile.vk_link %}
                 <div class="social-link" id="vk-container">
-                  <span class="social-label">Vk:</span>
-                  <span id="vk-id">hesus1</span>
+                  <a href="{{ profile.vk_link }}" 
+                       target="_blank" 
+                       class="social-id" 
+                       id="vk-id">
+                    <span class="social-label">Vk:</span>
+                    
+                      {{ profile.vk_link.split('/')[-1] }}
+                    
+                  </a>
                 </div>
+                {% endif %}
               </div>
             </div>
             <div class="qr-code-container">
-              <img
-                src="{{ url_for('static', filename='img/test.img') }}"
-                alt="QR code"
-                class="qr-code"
-              />
+              {% if profile.qr_photo %}
+              <img src="{{ url_for('static', filename='qrcodes/' + profile.qr_photo) }}" 
+                  alt="QR Code" 
+                  class="qr-code">
+              {% else %}
+              <p>QR-код не сгенерирован</p>
+              {% endif %}
               <div class="action-buttons">
                 <button class="action-button">Добавить в друзья</button>
                 <button class="action-button" id="download-profile">Скачать визитку</button>
@@ -80,118 +99,131 @@
             class="modal-content"
           >
             <h2 id="modal-title" class="modal-title">Редактирование профиля</h2>
-            <form id="profile-form">
+            <form id="profile-form" method="POST" enctype="multipart/form-data">
+              {{ form.hidden_tag() }}
               <div class="form-fields">
-                <div class="photo-upload-container">
-                  <div class="current-photo-preview" id="preview-container">
-                    <!-- Default image preview -->
-                    <img
-                      id="current-photo"
-                      src="{{ url_for('static', filename='img/test.img') }}"
-                      alt="Current profile media"
-                      class="photo-preview"
-                    />
-                    <!-- Video preview (hidden by default) -->
-                    <video
-                      id="current-video"
-                      class="video-preview hidden"
-                      loop
-                      muted
-                      autoplay
-                      playsinline
-                    ></video>
-                  </div>
                   <div class="photo-upload-controls">
-                    <label for="photo-upload" class="photo-upload-label"
-                      >Выбрать медиа</label
-                    >
-                    <input
-                      type="file"
-                      id="photo-upload"
-                      class="photo-upload-input"
+                    {{ form.profile_media.label(for="photo-upload") }}
+                    {{ form.profile_media(
+                      id="photo-upload",
+                      class="photo-upload-input",
                       accept="image/*,video/*,.gif"
-                    />
+                    ) }}
+                    {% if form.profile_media.errors %}
+                      <div class="error">{{ form.profile_media.errors[0] }}</div>
+                    {% endif %}
                     <p class="photo-upload-help">
                       Поддерживаются изображения, GIF и видео
                     </p>
                   </div>
                 </div>
+                
+                <!-- Full Name -->
                 <label class="form-label">
-                  <span>Имя</span>
-                  <input
-                    type="text"
-                    value="Христос Исус Сосалович"
-                    class="form-input"
-                    id="input-name"
-                  />
+                  <span>{{ form.full_name.label.text }}</span>
+                  {{ form.full_name(
+                    class="form-input",
+                    id="input-name",
+                    value=profile.full_name
+                  ) }}
+                  {% if form.full_name.errors %}
+                    <div class="error">{{ form.full_name.errors[0] }}</div>
+                  {% endif %}
                 </label>
+        
+                <!-- Email -->
                 <label class="form-label">
-                  <span>Email</span>
-                  <input
-                    type="email"
-                    value="hesus@hristos.com"
-                    class="form-input"
-                    id="input-email"
-                  />
+                  <span>{{ form.email.label.text }}</span>
+                  {{ form.email(
+                    class="form-input",
+                    id="input-email",
+                    value=profile.email
+                  ) }}
+                  {% if form.email.errors %}
+                    <div class="error">{{ form.email.errors[0] }}</div>
+                  {% endif %}
                 </label>
+        
+                <!-- Phone -->
                 <label class="form-label">
-                  <span>Телефон</span>
-                  <input 
-                    type="tel" 
-                    class="form-input"
-                    id="input-phone"
+                  <span>{{ form.phone.label.text }}</span>
+                  {{ form.phone(
+                    class="form-input",
+                    id="input-phone",
+                    type="tel",
+                    value=profile.phone,
                     maxlength="16"
-                    required
-                  >
+                  ) }}
+                  {% if form.phone.errors %}
+                    <div class="error">{{ form.phone.errors[0] }}</div>
+                  {% endif %}
                 </label>
+        
+                <!-- Position -->
                 <label class="form-label">
-                  <span>Должность</span>
-                  <input
-                    type="text"
-                    value="Админ"
-                    class="form-input"
-                    id="input-position"
-                  />
+                  <span>{{ form.position.label.text }}</span>
+                  {{ form.position(
+                    class="form-input",
+                    id="input-position",
+                    value=profile.position
+                  ) }}
+                  {% if form.position.errors %}
+                    <div class="error">{{ form.position.errors[0] }}</div>
+                  {% endif %}
                 </label>
+        
+                <!-- Telegram -->
                 <label class="form-label">
-                  <span>Telegram</span>
-                  <input
-                    type="url"
-                    value="https://t.me/pipisya"
-                    placeholder="https://t.me/your_username"
-                    class="form-input"
-                    id="input-telegram"
-                  />
+                  <span>{{ form.telegram_link.label.text }}</span>
+                  {{ form.telegram_link(
+                    class="form-input",
+                    id="input-telegram",
+                    placeholder="https://t.me/username",
+                    value=profile.telegram_link or ""
+                  ) }}
+                  {% if form.telegram_link.errors %}
+                    <div class="error">{{ form.telegram_link.errors[0] }}</div>
+                  {% endif %}
                 </label>
+        
+                <!-- GitHub -->
                 <label class="form-label">
-                  <span>GitHub</span>
-                  <input
-                    type="url"
-                    value="https://github.com/hesus"
-                    placeholder="https://github.com/username"
-                    class="form-input"
-                    id="input-github"
-                  />
+                  <span>{{ form.github_link.label.text }}</span>
+                  {{ form.github_link(
+                    class="form-input",
+                    id="input-github",
+                    placeholder="https://github.com/username",
+                    value=profile.github_link or ""
+                  ) }}
+                  {% if form.github_link.errors %}
+                    <div class="error">{{ form.github_link.errors[0] }}</div>
+                  {% endif %}
                 </label>
+        
+                <!-- VK -->
                 <label class="form-label">
-                  <span>VK</span>
-                  <input
-                    type="url"
-                    value="https://vk.com/hesus1"
-                    placeholder="https://vk.com/username"
-                    class="form-input"
-                    id="input-vk"
-                  />
+                  <span>{{ form.vk_link.label.text }}</span>
+                  {{ form.vk_link(
+                    class="form-input",
+                    id="input-vk",
+                    placeholder="https://vk.com/username",
+                    value=profile.vk_link or ""
+                  ) }}
+                  {% if form.vk_link.errors %}
+                    <div class="error">{{ form.vk_link.errors[0] }}</div>
+                  {% endif %}
                 </label>
+        
                 <div class="form-buttons">
-                  <button class="button" type="submit">Сохранить</button>
+                  {{ form.submit(class="button") }}
                   <button class="button" type="button" id="cancel-button">
                     Отмена
                   </button>
-                  
-                  <a href="{{ url_for('main_bp.logout') }}"><button class="button" type="button" id="logout-button">
-                    Logout
-                  </button></a>
+                  <a href="{{ url_for('main_bp.logout') }}">
+                    <button class="button" type="button" id="logout-button">
+                      Logout
+                    </button>
+                  </a>
                 </div>
               </div>
             </form>

@@ -11,16 +11,21 @@ import eventlet  # Импортируем eventlet для работы с аси
 import builtins  # Импортируем встроенные функции Python
 import contextlib  # Импортируем contextlib для управления контекстами
 import io  # Импортируем io для работы с потоками ввода-вывода
-from .forms import LoginForm, RegistrationForm
+from .forms import LoginForm, RegistrationForm, ProfileEditForm
 from flask_login import current_user, login_user
 from flask_login import logout_user
 import sqlalchemy as sa
 from .extensions import db
-from .models import User
+from .models import User, UserProfile
 from flask_login import login_required
+from werkzeug.utils import secure_filename
+import os
+from .funcs import generate_qr_code
+
 
 main_bp = Blueprint("main_bp", __name__)  # Создаём Blueprint для организации маршрутов
-
+appdir = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(appdir, '../static/uploads')
 
 @main_bp.route(
     "/"
@@ -29,17 +34,55 @@ main_bp = Blueprint("main_bp", __name__)  # Создаём Blueprint для ор
 def index():
     return render_template("index.html")  # Возвращаем HTML-шаблон index.html
 
-@main_bp.route('/profile/<id>')
+@main_bp.route('/profile/<int:id>', methods=['GET', 'POST'])
 @login_required
 def profile(id):
-    user = db.first_or_404(sa.select(User).where(User.id == id))
-    
-    return render_template('profile.html', user=user, current_endpoint=request.endpoint)
+    profile = db.first_or_404(sa.select(UserProfile).where(UserProfile.user_id == id))
+    form = ProfileEditForm()
+    if form.validate_on_submit():
+        try:
+            # Обновляем текстовые поля
+            profile.full_name = form.full_name.data
+            profile.email = form.email.data
+            profile.phone = form.phone.data
+            profile.position = form.position.data
+            profile.telegram_link = form.telegram_link.data
+            profile.github_link = form.github_link.data
+            profile.vk_link = form.vk_link.data
+
+            # Обрабатываем файл
+            if form.profile_media.data:
+                file = form.profile_media.data
+                filename = secure_filename(f"{id}_{file.filename}")
+                file_path = os.path.join(UPLOAD_FOLDER, filename)
+                file.save(file_path)
+                profile.profile_photo = filename
+
+            db.session.commit()
+            flash('Данные успешно сохранены!', 'success')
+            return redirect(url_for('main_bp.profile', id=id))  # Редирект с ID
+
+        except Exception as e:
+            db.session.rollback()
+            print(e)
+
+    elif request.method == 'GET':
+        # Заполняем форму данными из БД
+        form.full_name.data = profile.full_name
+        form.email.data = profile.email
+        form.phone.data = profile.phone
+        form.position.data = profile.position
+        form.telegram_link.data = profile.telegram_link
+        form.github_link.data = profile.github_link
+        form.vk_link.data = profile.vk_link
+
+    return render_template('profile.html', profile=profile, current_endpoint=request.endpoint, form=form)
 
 @main_bp.route("/ide")  # Определяем маршрут для главной страницы, доступной по адресу http://127.0.0.1:5000/
 @login_required
 def ide():
-    return render_template("ide.html", current_endpoint=request.endpoint)  # Возвращаем HTML-шаблон index.html
+    profile = db.first_or_404(sa.select(UserProfile).where(UserProfile.user_id == current_user.id))
+    return render_template("ide.html", current_endpoint=request.endpoint, profile=profile)  # Возвращаем HTML-шаблон index.html
 
 
 @main_bp.route("/login", methods=["GET", "POST"])
@@ -79,9 +122,18 @@ def register():
             middle_name=form.middle_name.data,
             email=form.email.data,
         )
+        full_name = " ".join(filter(None, [form.last_name.data, form.first_name.data, form.middle_name.data]))
+        user.profile = UserProfile(email=form.email.data, full_name=full_name)
         user.set_password(form.password.data)
+        user.profile.profile_photo = 'standart.png'
+
+        qr_filename = generate_qr_code(user.id, user.email, False)
+        user.profile.qr_photo = qr_filename
+
         db.session.add(user)
         db.session.commit()
+        qr_filename = generate_qr_code(user.id, user.email, True)
+        
         flash("Congratulations, you are now a registered user!")
         return redirect(url_for("main_bp.login"))
     return render_template("register.html", title="Register", form=form)
