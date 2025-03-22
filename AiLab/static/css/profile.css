@@ -432,17 +432,39 @@
   .photo-upload-label:hover {
     transform: scale(1.02);
   }
-  
-  .photo-upload-input {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-  }
+  /* Стили для FileField */
+input[type="file"] {
+  appearance: none;
+  background-color: --button-bg; /* Цвет кнопки */
+  color: --button-text;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 30px; /* Закруглённые края */
+  cursor: pointer;
+  font-size: 16px;
+  text-align: center;
+  transition: background 0.3s;
+  width: 250px;
+  box-shadow: 0px 0px 20px 0px var(--shadow-color);
+}
+
+/* Изменение фона при наведении */
+input[type="file"]:hover {
+  background-color: --button-bg;
+}
+
+/* Скрываем стандартный текст "Выбрать файл" в некоторых браузерах */
+input[type="file"]::-webkit-file-upload-button {
+  visibility: hidden;
+}
+
+input[type="file"]::before {
+  content: "Загрузить";
+  display: inline-block;
+  text-align: center;
+  width: 100%;
+  color: --button-text;
+}
   
   .photo-upload-help {
     font-size: 12px;
@@ -459,6 +481,7 @@
     font-family: Inter, sans-serif;
     color: var(--text-primary);
     transition: color var(--transition-speed);
+    margin-top: 20px
   }
   
   .form-input {

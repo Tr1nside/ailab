@@ -18,6 +18,7 @@
                   id="profile-image"
                 />
               </div>
+              {% if id == current_user.id %}
               <div class="edit-button-container">
                 <button
                   class="edit-button"
@@ -27,6 +28,7 @@
                   Редактировать
                 </button>
               </div>
+              {% endif %}
             </div>
             <div class="profile-info">
               <h1 class="profile-name">{{ profile.full_name }}</h1>
@@ -84,8 +86,13 @@
               <p>QR-код не сгенерирован</p>
               {% endif %}
               <div class="action-buttons">
+                {% if id != current_user.id %}
                 <button class="action-button">Добавить в друзья</button>
+                {% endif %}
+                {% if id == current_user.id %}
                 <button class="action-button" id="download-profile">Скачать визитку</button>
+                {% endif %}
+                
               </div>
             </div>
           </div>

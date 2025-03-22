@@ -76,7 +76,7 @@ def profile(id):
         form.github_link.data = profile.github_link
         form.vk_link.data = profile.vk_link
 
-    return render_template('profile.html', profile=profile, current_endpoint=request.endpoint, form=form)
+    return render_template('profile.html', profile=profile, id=id, current_endpoint=request.endpoint, form=form)
 
 @main_bp.route("/ide")  # Определяем маршрут для главной страницы, доступной по адресу http://127.0.0.1:5000/
 @login_required

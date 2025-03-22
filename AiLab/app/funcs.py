@@ -37,4 +37,4 @@ def generate_qr_code(user_id, email, flag):
         img.save(save_path)
         return filename
     else: 
-        return f"qr_{email}.png"
+        return f"qr_{email}.svg"
