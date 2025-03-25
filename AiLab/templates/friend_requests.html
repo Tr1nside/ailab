@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block title %}Friends{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/friend_requests.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="friend-requests-container">
+    <h2>Входящие запросы</h2>
+    {% if incoming %}
+        <ul>
+            {% for request in incoming %}
+                <a href="{{ url_for('main_bp.profile', id=request.user.profile.user_id) }}">
+                    <li>
+                        <img src="{{ url_for('static', filename='uploads/' + request.user.profile.profile_photo) }}" alt="{{ request.user.profile.full_name }}">
+                        <span>{{ request.user.profile.full_name }}</span>
+                        <div class="buttons">
+                            <form action="{{ url_for('main_bp.accept_request', request_id=request.id) }}" method="POST">
+                                <button type="submit">Принять</button>
+                            </form>
+                            <form action="{{ url_for('main_bp.decline_request', request_id=request.id) }}" method="POST">
+                                <button type="submit">Отклонить</button>
+                            </form>
+                        </div>
+                    </li>
+                </a>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Нет входящих запросов.</p>
+    {% endif %}
+
+    <h2>Исходящие запросы</h2>
+    {% if outgoing %}
+        <ul>
+            {% for request in outgoing %}
+                <a href="{{ url_for('main_bp.profile', id=request.friend_id) }}">
+                    <li>
+                        <img src="{{ url_for('static', filename='uploads/' + request.friend.profile.profile_photo) }}" alt="{{ request.friend.profile.full_name }}">
+                        <span>{{ request.friend.profile.full_name }}</span>
+                        <div class="buttons">
+                            <form action="{{ url_for('main_bp.cancel_request', request_id=request.id) }}" method="POST">
+                                <button type="submit">Отменить запрос</button>
+                            </form>
+                        </div>
+                    </li>
+                </a>        
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>Нет исходящих запросов.</p>
+    {% endif %}
+
+    <h2>Друзья</h2>
+    {% if friends %}
+        <ul>
+            {% for friend in friends %}
+                <a href="{{ url_for('main_bp.profile', id=friend.profile.user_id) }}">    
+                        <li>
+                            <img src="{{ url_for('static', filename='uploads/' + friend.profile.profile_photo) }}" alt="{{ friend.profile.full_name }}">
+                            <span>{{ friend.profile.full_name }}</span>
+                            <div class="buttons"></div>
+                                <form action="{{ url_for('main_bp.remove_friend', friend_id=friend.id) }}" method="POST">
+                                    <button type="submit">Удалить из друзей</button>
+                                </form>
+                        </li>
+                </a>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>У вас пока нет друзей.</p>
+    {% endif %}
+</div>
+{% endblock %}

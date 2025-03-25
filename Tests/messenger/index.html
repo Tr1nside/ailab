@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="chat-app">
+        <div class="chat-messenger" id="chatMessenger">
+          <div class="messenger-container">
+            <div class="messenger-content">
+              <template id="contactsListTemplate">
+                <div class="search-container">
+                  <div class="search-wrapper">
+                    <div class="search-input-wrapper">
+                      <input
+                        class="search-input"
+                        type="text"
+                        placeholder="Поиск"
+                        id="searchInput"
+                      />
+                      <div class="search-actions"></div>
+                    </div>
+                  </div>
+                </div>
+      
+                <template id="contactItemTemplate">
+                  <div class="contact-item">
+                    <div class="contact-info">
+                      <div class="contact-avatar"></div>
+                      <div class="contact-name"></div>
+                    </div>
+                    <div class="contact-status"></div>
+                  </div>
+                </template>
+              </template>
+      
+              <template id="chatViewTemplate">
+                <div class="chat-view">
+                  <div class="chat-header">
+                    <button class="back-button" id="backButton">←</button>
+                    <div class="chat-contact">
+                      <div class="chat-contact-avatar"></div>
+                      <div class="chat-contact-name"></div>
+                    </div>
+                  </div>
+                  <div class="chat-body">
+                    <div class="chat-start-message">
+                      <span>Начните общение с</span>
+                      <span class="chat-contact-name-display"></span>
+                    </div>
+                    <div class="message-input-container">
+                      <div class="emoji-container">
+                        <button class="emoji-button" id="emojiButton">😊</button>
+                        <template id="emojiPickerTemplate">
+                          <div class="emoji-picker">
+                            <template id="emojiItemTemplate">
+                              <button class="emoji-item"></button>
+                            </template>
+                          </div>
+                        </template>
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Введите сообщение..."
+                        class="message-input"
+                        id="messageInput"
+                      />
+                      <button class="send-button" id="sendButton">Отправить</button>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+        <div class="toggle-container">
+          <img
+            src="https://cdn.builder.io/api/v1/image/assets/3dc789dd42744ca5b21092f4ac15fd5c/5bdb4d6164c3a1a2be0d6649f47f665c141eb71f?placeholderIfAbsent=true"
+            class="toggle-button"
+            id="toggleButton"
+          />
+        </div>
+      </div>
+      
+    <script src="script.js"></script>
+</body>
+</html>

@@ -52,3 +52,4 @@ document.getElementById('profile-form').addEventListener('submit', function(e) {
   }
   form.classList.add('was-validated');
 });
+

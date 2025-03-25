@@ -19,16 +19,22 @@
         {% if current_endpoint != 'main_bp.ide' %}
         <div class="ide-link"><a href="{{ url_for('main_bp.ide') }}">💻</a></div>
         {% endif %}
-
-        <div class="logo-block">
-            <img src="{{ url_for('static', filename='img/logo.png') }}" class="logo-style">
-            <div class="header-title">AiLab WEB</div>
+        <div class="center-pos">
+            <div class="logo-block">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" class="logo-style">
+                <div class="header-title">AiLab WEB</div>
+            </div>
+            {% if current_endpoint != 'main_bp.profile' %}
+            <a href="{{ url_for('main_bp.profile', id=current_user.id) }}" class="profile-icon">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile.profile_photo) }}" alt="Профиль">
+            </a>    
+            {% endif %}
+            {% if current_endpoint == 'main_bp.profile' and (id is not defined or id != current_user.id) %}
+            <a href="{{ url_for('main_bp.profile', id=current_user.id) }}" class="profile-icon">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile.profile_photo) }}" alt="Профиль">
+            </a>
+            {% endif %}
         </div>
-        {% if current_endpoint != 'main_bp.profile' %}
-        <a href="{{ url_for('main_bp.profile', id=current_user.id) }}" class="profile-icon">
-            <img src="{{ url_for('static', filename='uploads/' + profile.profile_photo) }}" alt="Профиль">
-        </a>    
-        {% endif %}
         
 
         <div class="night-mode">🌙</div>

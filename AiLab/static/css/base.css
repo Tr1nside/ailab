@@ -1,4 +1,6 @@
-/* Шапка */
+body {
+    font-family: Inter, sans-serif;
+}
 
 .header {
     background: linear-gradient(to right, #3498db, #2c3e50);
@@ -16,26 +18,38 @@ body.dark-mode .header {
     color: #fff;
 }
 
-.logo-block{
+/* Центрируем содержимое .center-pos */
+.center-pos {
     display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Добавлено расстояние между элементами */
     position: absolute;
-    left: 45%;
-    transform: translateX(-45%);
+    left: 50%;
+    transform: translateX(-50%);
 }
 
-.logo-style{
+
+/* Лого + текст внутри .center-pos */
+.logo-block {
+    display: flex;
+    align-items: center;
+}
+
+/* Лого */
+.logo-style {
     width: 40px;
     height: 40px;
-    /* background: linear-gradient(45deg, #30cfd0, #330867); */
     border-radius: 5px;
-    /* rotate: 110deg; */
 }
 
-
+/* Заголовок */
 .header-title {
     font-size: 34px;
     margin-left: 1rem;
 }
+
+
 
 /* Ночной режим */
 
@@ -48,7 +62,7 @@ body.dark-mode {
     cursor: pointer;
     font-size: 28px;
     position: absolute;
-    right: 2%;
+    right: 2vw;
 }
 
 
@@ -74,15 +88,12 @@ body.dark-mode {
 .profile-icon img:hover {
     transform: scale(1.1); /* Анимация увеличения при наведении */
 }
-.profile-icon {
-    position: absolute;
-    left: 56%;
-    transform: translateX(-56%);
-}
 
 .ide-link {
     cursor: pointer;
     font-size: 28px;
+    position: absolute;
+    left: 2vw;
 }
 
 a {

@@ -1,0 +1,85 @@
+/* CSS Variables for theming */
+:root {
+    --shadow-color: rgba(0, 0, 0, 0.3);
+    --button-bg: #e8e8e8;
+    --button-text: #000;
+    --bg-div: #fff;
+  }
+  
+  .dark-mode {
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --button-bg: #2a2a2a;
+    --button-text: #fff;
+    --bg-div: #1f1e1e;
+  }
+body {
+    margin: 0;
+    padding: 0;
+}
+
+a {
+    text-decoration: none; /* Убирает подчеркивание */
+    color: inherit; /* Наследует цвет текста родительского элемента */
+}
+
+.friend-requests-container {
+    max-width: 40vw;
+    margin: 0 auto;
+    padding: 2vh;
+}
+
+.friend-requests-container h2 {
+    margin-top: 3vh;
+}
+
+.friend-requests-container ul {
+    list-style: none;
+    padding: 0;
+}
+
+.friend-requests-container li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border-radius: 15px;
+  background-color: var(--bg-div);
+  box-shadow: 0px 0px 19.9px 0px var(--shadow-color);
+}
+
+.friend-requests-container img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.friend-requests-container button {
+    width: 10vw;
+    height: 6vh;
+    border-radius: 10px;
+    background-color: var(--button-bg);
+    /* box-shadow: 0px 0px 20px 0px var(--shadow-color); */
+    color: var(--button-text);
+    font-size: 1vw;
+    font-family: Inter, sans-serif;
+    cursor: pointer;
+    border: none;
+    transition:
+      transform 0.2s,
+      background-color var(--transition-speed),
+      color var(--transition-speed),
+      box-shadow var(--transition-speed);
+    
+}
+
+.friend-requests-container .buttons {
+    margin-left: auto;
+    display: flex;
+    gap: 10px; /* Отступ между кнопками */
+}
+
+span {
+    font-size: 20px;
+}

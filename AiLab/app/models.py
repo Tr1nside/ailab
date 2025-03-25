@@ -4,6 +4,7 @@ from flask_login import UserMixin
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from .extensions import db, login
+from datetime import datetime
 
 
 class User(UserMixin, db.Model):
@@ -27,6 +28,59 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f"<User {self.email}>"
+    
+    def is_friend(self, friend_id):
+        return Friendship.query.filter(
+            ((Friendship.user_id == self.id) & (Friendship.friend_id == friend_id)) |
+            ((Friendship.user_id == friend_id) & (Friendship.friend_id == self.id)),
+            Friendship.status == 'accepted'
+        ).first() is not None
+    
+    def get_friends(self):
+        # Получаем подтвержденные дружеские связи
+        friendships = Friendship.query.filter(
+            ((Friendship.user_id == self.id) | (Friendship.friend_id == self.id)),
+            Friendship.status == 'accepted'
+        ).all()
+
+        friends = []
+        for fs in friendships:
+            if fs.user_id == self.id:
+                friend = User.query.get(fs.friend_id)
+            else:
+                friend = User.query.get(fs.user_id)
+            friends.append(friend)
+
+        return friends
+    
+    @classmethod
+    def get_friendship_status(cls, user_id, friend_id):
+        """
+        Возвращает статус дружбы между двумя пользователями.
+        Возможные значения:
+        - 'accepted': Пользователи друзья.
+        - 'pending': Запрос на дружбу ожидает подтверждения.
+        - None: Нет активной дружбы или запроса.
+        """
+        friendshipU_F = Friendship.query.filter(
+            ((Friendship.user_id == user_id) & (Friendship.friend_id == friend_id))
+        ).first()
+
+        friendshipF_U = Friendship.query.filter(
+            ((Friendship.user_id == friend_id) & (Friendship.friend_id == user_id))
+        ).first()
+
+        if friendshipU_F:
+            if friendshipU_F.status == 'accepted':
+                return 'accepted'
+            elif friendshipU_F.status == 'pending':
+                return 'U_F'
+        elif friendshipF_U:
+            if friendshipF_U.status == 'accepted':
+                return 'accepted'
+            elif friendshipF_U.status == 'pending':
+                return 'F_U'
+        return None
 
 
 @login.user_loader
@@ -49,3 +103,15 @@ class UserProfile(db.Model):
 
     # Обратная связь, позволяющая получить пользователя, которому принадлежит профиль
     user: so.Mapped["User"] = db.relationship('User', back_populates='profile')
+
+# models.py
+class Friendship(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    friend_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending')  # pending/accepted/declined
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Отношение к пользователям
+    user = db.relationship('User', foreign_keys=[user_id], backref='sent_requests')
+    friend = db.relationship('User', foreign_keys=[friend_id], backref='received_requests')

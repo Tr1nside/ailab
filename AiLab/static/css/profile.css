@@ -297,6 +297,7 @@
     display: flex;
     gap: 30px;
     margin-top: 18px;
+    justify-content: flex-end; /* Выравнивание кнопок вправо */
   }
   
   @media (max-width: 991px) {
@@ -465,119 +466,124 @@ input[type="file"]::before {
   width: 100%;
   color: --button-text;
 }
-  
-  .photo-upload-help {
-    font-size: 12px;
-    color: var(--text-secondary);
-    margin: 0;
-    max-width: 200px;
-    transition: color var(--transition-speed);
-  }
-  
-  .form-label {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-family: Inter, sans-serif;
-    color: var(--text-primary);
-    transition: color var(--transition-speed);
-    margin-top: 20px
-  }
-  
-  .form-input {
-    padding: 8px;
-    border-radius: 8px;
-    border: 1px solid var(--input-border);
-    background-color: var(--input-bg);
-    color: var(--text-primary);
-    transition:
-      background-color var(--transition-speed),
-      color var(--transition-speed),
-      border-color var(--transition-speed);
-  }
-  
-  .form-buttons {
-    display: flex;
-    gap: 12px;
-    margin-top: 20px;
-  }
-  
-  .button {
-    width: 151px;
-    height: 50px;
-    border-radius: 10px;
-    background-color: var(--save-button-bg);
-    box-shadow: 0px 0px 20px 0px var(--shadow-color);
-    color: var(--save-button-text);
-    font-size: 15px;
-    font-family: Inter, sans-serif;
-    cursor: pointer;
-    border: none;
-    transition:
-      transform 0.2s,
-      background-color var(--transition-speed),
-      color var(--transition-speed),
-      box-shadow var(--transition-speed);
-  }
- 
-  .button:hover {
-    transform: scale(1.02);
-  }
-  
-  .button:focus {
-    outline: 2px solid #000;
-    outline-offset: 2px;
-  }
-  
-  
-  /* Utility classes */
-  .hidden {
-    display: none;
-  }
-  
 
-  /* Добавить эти стили в раздел Theme toggle button */
+.photo-upload-help {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+  max-width: 200px;
+  transition: color var(--transition-speed);
+}
+
+.form-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: Inter, sans-serif;
+  color: var(--text-primary);
+  transition: color var(--transition-speed);
+  margin-top: 20px
+}
+
+.form-input {
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--input-border);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  transition:
+    background-color var(--transition-speed),
+    color var(--transition-speed),
+    border-color var(--transition-speed);
+}
+
+.form-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.button {
+  width: 151px;
+  height: 50px;
+  border-radius: 10px;
+  background-color: var(--save-button-bg);
+  box-shadow: 0px 0px 20px 0px var(--shadow-color);
+  color: var(--save-button-text);
+  font-size: 15px;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  border: none;
+  transition:
+    transform 0.2s,
+    background-color var(--transition-speed),
+    color var(--transition-speed),
+    box-shadow var(--transition-speed);
+}
+
+.button:hover {
+  transform: scale(1.02);
+}
+
+.button:focus {
+  outline: 2px solid #000;
+  outline-offset: 2px;
+}
+
+
+/* Utility classes */
+.hidden {
+  display: none;
+}
+
+
+/* Добавить эти стили в раздел Theme toggle button */
 .theme-toggle {
-    position: fixed; /* Изменить с absolute на fixed */
-    top: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background-color: var(--button-bg);
-    border: none;
-    box-shadow: 0px 0px 10px var(--shadow-color);
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1001; /* Увеличить z-index */
-    transition: all var(--transition-speed);
-  }
-  
-  .theme-toggle-icon {
-    font-size: 20px;
-    transition: opacity 0.2s;
-    position: absolute;
-  }
-  
-  .dark-icon {
-    opacity: 0;
-    transform: scale(0);
-  }
-  
-  .light-icon {
-    opacity: 1;
-    transform: scale(1);
-  }
-  
-  .dark-theme .light-icon {
-    opacity: 0;
-    transform: scale(0);
-  }
-  
-  .dark-theme .dark-icon {
-    opacity: 1;
-    transform: scale(1);
-  }
+  position: fixed; /* Изменить с absolute на fixed */
+  top: 20px;
+  right: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--button-bg);
+  border: none;
+  box-shadow: 0px 0px 10px var(--shadow-color);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1001; /* Увеличить z-index */
+  transition: all var(--transition-speed);
+}
 
+.theme-toggle-icon {
+  font-size: 20px;
+  transition: opacity 0.2s;
+  position: absolute;
+}
+
+.dark-icon {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.light-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.dark-theme .light-icon {
+  opacity: 0;
+  transform: scale(0);
+}
+
+.dark-theme .dark-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.error {
+  color: red;
+  font-size: 14px;
+  margin-top: 8px;
+}

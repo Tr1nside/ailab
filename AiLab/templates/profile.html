@@ -86,8 +86,23 @@
               <p>QR-код не сгенерирован</p>
               {% endif %}
               <div class="action-buttons">
+                {% if id == current_user.id %}
+                <a href="{{ url_for('main_bp.friend_requests') }}"><button class="action-button" id="friends-list-btn">Список друзей</button></a>
+                {% endif %}
                 {% if id != current_user.id %}
-                <button class="action-button">Добавить в друзья</button>
+                    {% set friendship_status = current_user.get_friendship_status(current_user.id, id) %}  <!-- Нужно добавить метод в модель User -->
+                    {% if friendship_status == 'accepted' %}
+                        <button class="action-button" disabled>Уже друзья</button>
+                    {% elif friendship_status == 'U_F' %}
+                      <button class="action-button" disabled>Заявка отправлена</button>
+                    {% elif friendship_status == 'F_U' %}
+                    <button class="action-button" disabled>Вам отправлена заявка</button>
+                    {% else %}
+                      <form action="{{ url_for('main_bp.add_friend') }}" method="POST">
+                        <input type="hidden" name="friend_id" value="{{ id }}">
+                        <button type="submit" class="action-button">Добавить в друзья</button>
+                      </form>
+                    {% endif %}
                 {% endif %}
                 {% if id == current_user.id %}
                 <button class="action-button" id="download-profile">Скачать визитку</button>
@@ -237,7 +252,13 @@
           </div>
         </div>
       </div>
-    
+      <div id="friends-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Список друзей</h2>
+            <div id="friends-list"></div>
+            <button id="close-friends-modal">Закрыть</button>
+        </div>
+    </div>
     {% endblock %}
 
     {% block scripts %}

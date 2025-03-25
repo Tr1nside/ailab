@@ -445,33 +445,34 @@ function copyToClipboard() {
     });
 }
 
+
+
 document.addEventListener("DOMContentLoaded", () => {
     const nightModeButton = document.querySelector('.night-mode');
-  
-    // Инициализация темы CodeMirror из localStorage
-    const savedTheme = localStorage.getItem('cmTheme') === 'dark';
+    
+    // Инициализация темы из localStorage
+    const savedTheme = localStorage.getItem('theme') === 'dark';
     updateCodeMirrorTheme(savedTheme);
-  
+
     // Функция для обновления темы CodeMirror
     function updateCodeMirrorTheme(isDark) {
-      const theme = isDark ? "dracula" : "default";
-      for (const tabId in codeMirrorInstances) {
-        if (codeMirrorInstances.hasOwnProperty(tabId)) {
-          codeMirrorInstances[tabId].setOption("theme", theme);
+        const theme = isDark ? "dracula" : "default";
+        for (const tabId in codeMirrorInstances) {
+            if (codeMirrorInstances.hasOwnProperty(tabId)) {
+                codeMirrorInstances[tabId].setOption("theme", theme);
+            }
         }
-      }
-      localStorage.setItem('cmTheme', isDark ? 'dark' : 'light');
     }
-  
-    // Функция переключения темы CodeMirror
+
+    // Функция переключения темы
     function toggleCodeMirrorTheme() {
-      const isDark = localStorage.getItem('cmTheme') !== 'dark';
-      updateCodeMirrorTheme(isDark);
+        if (!Object.keys(codeMirrorInstances).length) return;
+        const currentTheme = codeMirrorInstances[Object.keys(codeMirrorInstances)[0]]
+            .getOption("theme");
+        updateCodeMirrorTheme(currentTheme !== "dracula");
     }
-  
-    // Назначение обработчика события
+
     if (nightModeButton) {
-      nightModeButton.addEventListener('click', toggleCodeMirrorTheme);
+        nightModeButton.addEventListener('click', toggleCodeMirrorTheme);
     }
-  });
-  
+});
