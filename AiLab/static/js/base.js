@@ -1,5 +1,13 @@
 const nightModeButton = document.querySelector('.night-mode');
 
+// Функция для обновления иконки
+function updateNightModeIcon() {
+    const isDark = document.body.classList.contains('dark-mode');
+    nightModeButton.innerHTML = isDark 
+        ? '<img src="../static/img/icons/sun.svg" alt="sun">' 
+        : '<img src="../static/img/icons/moon.svg" alt="moon">';
+}
+
 // Переключение между режимами
 let darkMode = false;
 if (!localStorage.getItem("darkMod")) {
@@ -9,26 +17,24 @@ if (!localStorage.getItem("darkMod")) {
     darkMode = localStorage.getItem("darkMod");
     if (darkMode) {
         document.body.classList.toggle('dark-mode');
-        nightModeButton.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+        updateNightModeIcon();
     }
 }
 
 const storedTheme = localStorage.getItem('theme');
 if (storedTheme === 'dark') {
     document.body.classList.add('dark-mode');
-    nightModeButton.textContent = '☀️';
 } else {
     document.body.classList.remove('dark-mode');
-    nightModeButton.textContent = '🌙';
 }
+updateNightModeIcon();
 
 nightModeButton.addEventListener('click', () => {
     document.body.classList.toggle('dark-mode');
     const isDark = document.body.classList.contains('dark-mode');
-    nightModeButton.textContent = isDark ? '☀️' : '🌙';
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    updateNightModeIcon();
 });
-
 
 if (typeof socketio !== 'undefined') {
     document.addEventListener('DOMContentLoaded', function() {

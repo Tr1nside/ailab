@@ -434,16 +434,13 @@ def handle_join_user_room():
     if current_user.is_authenticated:
         room = f'user_{current_user.id}'
         join_room(room)
-        print(f"User {current_user.id} joined room {room}")
-        print("Current rooms:", socketio.server.manager.rooms)
 
 @socketio.on('connect')
 def handle_connect():
-    print(f"Client connected: {request.sid}")
     if current_user.is_authenticated:
         join_room(f'user_{current_user.id}')
         print(f"User {current_user.id} joined room user_{current_user.id}")
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f"Client disconnected: {request.sid}")
+    leave_room(f'user_{current_user.id}')

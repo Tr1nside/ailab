@@ -8,7 +8,9 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/messenger.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+
     
 
     {% block styles %}
@@ -20,7 +22,7 @@
 <body>
     <div class="header">
         {% if current_endpoint != 'main_bp.ide' %}
-        <div class="ide-link"><a href="{{ url_for('main_bp.ide') }}">💻</a></div>
+        <div class="ide-link"><a href="{{ url_for('main_bp.ide') }}"><img src="{{ url_for('static', filename='img/icons/ide.svg') }}" alt="IDE"></a></div>
         {% endif %}
         <div class="center-pos">
             <div class="logo-block">
@@ -41,10 +43,10 @@
         
         <div class="messenger-icon">
             <span class="badge hidden" id="unread-count">0</span>
-            💬
+            <img src="{{ url_for('static', filename='img/icons/mess.svg') }}" alt="messanger">
         </div>
 
-        <div class="night-mode">🌙</div>
+        <div class="night-mode"><img src="{{ url_for('static', filename='img/icons/sun.svg') }}" alt="sun"></div>
     </div>
 
     {% block content %}
@@ -61,7 +63,18 @@
         </div>
     
     
-    
+    <script>
+        function playNotificationSound() {
+            const isChatOpen = document.getElementById('messenger-container').classList.contains('open');
+            const isWindowFocused = document.hasFocus();
+            
+            if (!isChatOpen && !isWindowFocused) {
+                const audio = new Audio("{{ url_for('static', filename='sounds/glam.mp3') }}");
+                audio.volume = 0.3;
+                audio.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
+            }
+        }
+    </script>
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
     <script src="{{ url_for('static', filename='js/messenger.js') }}"></script>
     {% block scripts %}

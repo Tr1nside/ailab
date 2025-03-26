@@ -100,6 +100,56 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+    function formatMessageTimes() {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const yesterday = today - 86400000; // 24 часа в миллисекундах
+    
+        document.querySelectorAll('.message-time').forEach(element => {
+            const isoString = element.dataset.timestamp;
+            if (!isoString) return;
+    
+            // Создаём дату в UTC
+            const messageDateUTC = new Date(isoString);
+            if (isNaN(messageDateUTC.getTime())) return;
+    
+            // Корректируем на часовой пояс пользователя
+            const userOffset = new Date().getTimezoneOffset() * 60000; // В миллисекундах
+            const messageDate = new Date(messageDateUTC.getTime() - userOffset); // Переводим в локальное время
+    
+            // Определяем локаль пользователя
+            const locale = navigator.language || 'ru-RU';
+    
+            // Получаем локализованное время
+            const timeStr = messageDate.toLocaleTimeString(locale, {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+    
+            // Определяем начало дня для сообщения
+            const messageDayStart = new Date(
+                messageDate.getFullYear(),
+                messageDate.getMonth(),
+                messageDate.getDate()
+            ).getTime();
+
+            if (messageDayStart === today) {
+                element.textContent = timeStr;
+            } else if (messageDayStart === yesterday) {
+                element.textContent = `вчера в ${timeStr}`;
+            } else {
+                const dateStr = messageDate.toLocaleDateString(locale, {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: messageDate.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+                });
+    
+                element.textContent = `${dateStr} ${timeStr}`;
+            }
+        });
+    }
+    
+
     // Загрузка чата с пользователем
     function loadChat(userId) {
         document.getElementById('messenger-header').classList.add('hidden');
@@ -107,6 +157,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.text())
             .then(html => {
                 document.getElementById('messenger-content').innerHTML = html;
+                formatMessageTimes(); // Вызов функции форматирования
                 
                 // Пометить сообщения как прочитанные
                 fetch(`/messenger/mark_as_read/${userId}`, { 
@@ -198,8 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
 
         socketio.on('new_message', function(data) {
-            console.log('New message from:', data.sender_id);
-            
+            formatMessageTimes();
             // Быстрое обновление счетчика
             const badge = document.getElementById('unread-count');
             if (badge) {
@@ -207,6 +257,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 badge.textContent = currentCount + 1;
                 badge.classList.remove('hidden');
             }
+
+            playNotificationSound()
 
             // Обновляем чат если он открыт
             const currentChat = document.querySelector('.chat-header');

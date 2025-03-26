@@ -1,12 +1,14 @@
 <div class="chat-container">
-    <div class="chat-header">
+    <div class="chat-header" data-user-id="{{ friend.id }}">
         <button class="back-button">←</button>
         <img src="{{ url_for('static', filename='uploads/' + friend.profile.profile_photo) }}" 
              class="contact-avatar">
         <div class="contact-info">
             <p class="contact-name">{{ friend.profile.full_name }}</p>
             <p class="contact-status">
-                <div class="status-indicator" data-user-id="USER_ID"></div>
+                <span class="status-indicator {% if friend.is_online() %}status-online{% else %}status-offline{% endif %}" 
+                      data-user-id="{{ friend.id }}"></span>
+                {% if friend.is_online() %}В сети{% else %}Не в сети{% endif %}
             </p>
         </div>
     </div>
@@ -15,13 +17,13 @@
         {% for message in messages %}
         <div class="message {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
             {{ message.text }}
-            <div class="message-time">{{ message.timestamp.strftime('%H:%M') }}</div>
+            <div class="message-time" data-timestamp="{{ message.timestamp.isoformat() }}"></div>
         </div>
         {% endfor %}
     </div>
     
     <div class="input-container">
-        <input type="text" class="chat-input" placeholder="Напишите сообщение..." id="message-input">
-        <button class="send-button">Отправить</button>
+        <textarea class="chat-input" placeholder="Напишите сообщение..." id="message-input" rows="1"></textarea>
+        <button class="send-button">➜</button>
     </div>
 </div>

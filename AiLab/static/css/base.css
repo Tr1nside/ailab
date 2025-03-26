@@ -97,6 +97,11 @@ body.dark-mode {
     left: 2vw;
 }
 
+img {
+    width: 3vw;
+    height: 3vw;
+}
+
 a {
     text-decoration: none;
 }
@@ -105,7 +110,8 @@ a {
     cursor: pointer;
     font-size: 28px;
     position: absolute;
-    right: 6vw;
+    right: 7vw;
+    top: 10px;
 }
 
 .messenger-icon .badge {
@@ -121,4 +127,8 @@ a {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.hidden {
+    display: none !important;
 }

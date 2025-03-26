@@ -195,7 +195,7 @@
 
 .chat-input {
     flex: 1;
-    padding: 8px 12px;
+    padding: 8px 8px;
     border-radius: 12px;
     border: 1px solid var(--messenger-border);
     background-color: var(--messenger-input-bg);
@@ -294,7 +294,7 @@
     color: white;
     border: none;
     border-radius: 20px;
-    padding: 0 20px;
+    padding: 0 15px;
     cursor: pointer;
 }
 
@@ -302,4 +302,7 @@
 .offline { color: #F44336; }
 .hidden {
     display: none;
+}
+.message-time {
+     font-size: 14px;
 }
