@@ -11,6 +11,7 @@ body {
     align-items: center;
     position: relative;
     min-height: 4vh;
+    z-index: 1100; /* Выше мессенджера */
 }
 
 body.dark-mode .header {
@@ -98,4 +99,26 @@ body.dark-mode {
 
 a {
     text-decoration: none;
+}
+
+.messenger-icon {
+    cursor: pointer;
+    font-size: 28px;
+    position: absolute;
+    right: 6vw;
+}
+
+.messenger-icon .badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background-color: red;
+    color: white;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }

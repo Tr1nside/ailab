@@ -5,6 +5,8 @@ from flask import (
     flash,
     redirect,
     url_for,
+    jsonify,
+    abort
 )  # Импортируем необходимые модули из Flask
 from urllib.parse import urlsplit
 import eventlet  # Импортируем eventlet для работы с асинхронными событиями
@@ -16,11 +18,14 @@ from flask_login import current_user, login_user
 from flask_login import logout_user
 import sqlalchemy as sa
 from .extensions import db
-from .models import User, UserProfile, Friendship
+from .models import User, UserProfile, Friendship, Message
 from flask_login import login_required
 from werkzeug.utils import secure_filename
 import os
 from .funcs import generate_qr_code
+from datetime import datetime
+from .extensions import socketio
+from flask_socketio import join_room, leave_room, emit
 
 
 main_bp = Blueprint("main_bp", __name__)  # Создаём Blueprint для организации маршрутов
@@ -262,7 +267,105 @@ def remove_friend(friend_id):
 
     flash("Пользователь удален из друзей", "success")
     return redirect(url_for('main_bp.friend_requests'))
+@main_bp.route('/messenger/contacts')
+@login_required
+def messenger_contacts():
+    friends = current_user.get_friends()
+    return render_template('messenger_contacts.html', friends=friends)
 
+@main_bp.route('/messenger/chat/<int:user_id>')
+@login_required
+def messenger_chat(user_id):
+    friend = User.query.get_or_404(user_id)
+    messages = Message.query.filter(
+        ((Message.sender_id == current_user.id) & (Message.recipient_id == user_id)) |
+        ((Message.sender_id == user_id) & (Message.recipient_id == current_user.id))
+    ).order_by(Message.timestamp.asc()).all()
+    return render_template('messenger_chat.html', friend=friend, messages=messages)
+
+@main_bp.route('/messenger/send', methods=['POST'])
+@login_required
+def send_message():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+
+        recipient_id = data.get('recipient_id')
+        text = data.get('text')
+        
+        if not recipient_id or not text:
+            return jsonify({'success': False, 'error': 'Missing recipient_id or text'}), 400
+
+        # Проверяем существование получателя
+        recipient = db.session.get(User, recipient_id)
+        if not recipient:
+            return jsonify({'success': False, 'error': 'Recipient not found'}), 404
+
+        message = Message(
+            sender_id=current_user.id,
+            recipient_id=recipient_id,
+            text=text,
+            is_read=False
+        )
+        db.session.add(message)
+        db.session.commit()
+
+        message_data = {
+            'id': message.id,
+            'sender_id': message.sender_id,
+            'recipient_id': message.recipient_id,
+            'text': message.text,
+            'timestamp': message.timestamp.isoformat(),
+            'is_read': message.is_read
+        }
+        
+        socketio.emit('new_message', message_data, room=f'user_{recipient_id}')
+        socketio.emit('new_message', message_data, room=f'user_{current_user.id}')
+        
+        return jsonify({'success': True, 'message': message_data})
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error sending message: {str(e)}")
+        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+
+@main_bp.route('/messenger/check_new')
+@login_required
+def check_new_messages():
+    count = Message.query.filter(
+        Message.recipient_id == current_user.id,
+        Message.is_read is False
+    ).count()
+    return jsonify({'count': count})
+
+@main_bp.before_request
+def before_request():
+    if current_user.is_authenticated:
+        current_user.last_seen = datetime.utcnow()
+        db.session.commit()
+@main_bp.route('/messenger/mark_as_read/<int:sender_id>', methods=['POST'])
+@login_required
+def mark_as_read(sender_id):
+    # Помечаем все непрочитанные сообщения от этого пользователя как прочитанные
+    Message.query.filter(
+        Message.sender_id == sender_id,
+        Message.recipient_id == current_user.id,
+        Message.is_read == False
+    ).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'success': True})
+
+@main_bp.route('/messenger/mark_message_read/<int:message_id>', methods=['POST'])
+@login_required
+def mark_message_read(message_id):
+    message = Message.query.get_or_404(message_id)
+    if message.recipient_id != current_user.id:
+        abort(403)
+    
+    message.is_read = True
+    db.session.commit()
+    return jsonify({'success': True})
 
 pending_inputs = {}  # Общий словарь для хранения событий ожидания ввода
 # извините, пусть оно просто тут полежит иначе все крашится) (пусть это будет дань уважения генеративному ИИ)
@@ -325,3 +428,22 @@ def register_socketio_events(socketio):
             socketio.emit(
                 "console_output", f"\n(Ввод вне запроса: {data})\n", room=sid
             )  # Уведомляем клиента о вводе вне запроса
+
+@socketio.on('join_user_room')
+def handle_join_user_room():
+    if current_user.is_authenticated:
+        room = f'user_{current_user.id}'
+        join_room(room)
+        print(f"User {current_user.id} joined room {room}")
+        print("Current rooms:", socketio.server.manager.rooms)
+
+@socketio.on('connect')
+def handle_connect():
+    print(f"Client connected: {request.sid}")
+    if current_user.is_authenticated:
+        join_room(f'user_{current_user.id}')
+        print(f"User {current_user.id} joined room user_{current_user.id}")
+
+@socketio.on('disconnect')
+def handle_disconnect():
+    print(f"Client disconnected: {request.sid}")

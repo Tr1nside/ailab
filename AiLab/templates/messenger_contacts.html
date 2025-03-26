@@ -1,0 +1,19 @@
+<ul class="contact-list">
+    {% for friend in friends %}
+    <li class="contact-item" data-user-id="{{ friend.id }}">
+        <img src="{{ url_for('static', filename='uploads/' + friend.profile.profile_photo) }}" 
+             alt="{{ friend.profile.full_name }}" 
+             class="contact-avatar">
+        <div class="contact-info">
+            <p class="contact-name">{{ friend.profile.full_name }}</p>
+            <p class="contact-status">
+                <span class="status-indicator {% if friend.is_online() %}status-online{% else %}status-offline{% endif %}" 
+                      data-user-id="{{ friend.id }}"></span>
+                {% if friend.is_online() %}В сети{% else %}Не в сети{% endif %}
+            </p>
+        </div>
+    </li>
+    {% else %}
+    <p>У вас пока нет друзей для общения</p>
+    {% endfor %}
+</ul>

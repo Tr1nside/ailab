@@ -28,3 +28,10 @@ nightModeButton.addEventListener('click', () => {
     nightModeButton.textContent = isDark ? '☀️' : '🌙';
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
 });
+
+
+if (typeof socketio !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+        socketio.emit('join_user_room');
+    });
+}

@@ -7,6 +7,9 @@
     <title>{% block title %}{% endblock %}</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/messenger.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    
 
     {% block styles %}
     {% endblock %}
@@ -36,19 +39,34 @@
             {% endif %}
         </div>
         
+        <div class="messenger-icon">
+            <span class="badge hidden" id="unread-count">0</span>
+            💬
+        </div>
 
         <div class="night-mode">🌙</div>
     </div>
 
     {% block content %}
     {% endblock %}
-<!--     
-    <div class="footer">
-    </div> -->
 
+        <div class="messenger-container" id="messenger-container">
+            <div class="messenger-header" id="messenger-header">
+                <div class="search-container">
+                    <input type="text" id="contact-search" placeholder="Поиск контактов..." class="search-input">
+                    <button id="close-messenger" class="close-button">×</button>
+                </div>
+            </div>
+            <div class="messenger-content" id="messenger-content"></div>
+        </div>
+    
+    
+    
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/messenger.js') }}"></script>
     {% block scripts %}
     {% endblock %}
-    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    <!-- В base.html перед закрывающим </body> -->
     
 </body>
 

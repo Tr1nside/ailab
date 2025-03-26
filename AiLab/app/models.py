@@ -14,12 +14,17 @@ class User(UserMixin, db.Model):
     first_name: so.Mapped[str] = so.mapped_column(sa.String(50), nullable=False)
     middle_name: so.Mapped[str] = so.mapped_column(sa.String(50), nullable=False)
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
+    last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(sa.DateTime, default=datetime.utcnow)
     
     # Двусторонняя связь с моделью UserProfile (один к одному)
     profile: so.Mapped[Optional["UserProfile"]] = db.relationship(
         "UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
     )
 
+    def is_online(self):
+        if self.last_seen:
+            return (datetime.utcnow() - self.last_seen).total_seconds() < 300  # 5 минут
+        return False
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -99,10 +104,11 @@ class UserProfile(db.Model):
     github_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
     telegram_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
     vk_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
-    
 
     # Обратная связь, позволяющая получить пользователя, которому принадлежит профиль
     user: so.Mapped["User"] = db.relationship('User', back_populates='profile')
+    
+    
 
 # models.py
 class Friendship(db.Model):
@@ -115,3 +121,14 @@ class Friendship(db.Model):
     # Отношение к пользователям
     user = db.relationship('User', foreign_keys=[user_id], backref='sent_requests')
     friend = db.relationship('User', foreign_keys=[friend_id], backref='received_requests')
+
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    text = db.Column(db.Text, nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
