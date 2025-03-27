@@ -1,81 +1,34 @@
-/* Custom styles for the chat application */
-
-/* Set the font family for the entire app */
-body {
-  font-family: "Inter", sans-serif;
-  margin: 0;
-  padding: 0;
-}
-
-/* Ensure the app takes up the full viewport */
-html,
-body {
-  height: 100%;
+.telegram-input-container {
   width: 100%;
-  overflow: hidden;
+  max-width: 500px; /* Можно настроить под ваш дизайн */
+  padding: 8px 12px;
+  background: #f0f2f5; /* Цвет фона как в Telegram */
+  border-radius: 20px; /* Закруглённые углы */
+  box-sizing: border-box;
 }
 
-/* Custom scrollbar styling */
-::-webkit-scrollbar {
-  width: 6px;
+.telegram-input {
+  width: 100%;
+  min-height: 40px; /* Минимальная высота */
+  max-height: 150px; /* Максимальная высота перед появлением прокрутки */
+  border: none;
+  outline: none;
+  resize: none; /* Отключаем ручное изменение размера */
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 1.4;
+  padding: 0;
+  overflow-y: auto; /* Прокрутка при переполнении */
+  scrollbar-width: thin; /* Тонкий скроллбар (для Firefox) */
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
+/* Стилизация скроллбара (для Chrome, Edge, Safari) */
+.telegram-input::-webkit-scrollbar {
+  width: 4px;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #c3c3cf;
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #a9a9b8;
-}
-
-/* Message bubble animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-#messages-container > div {
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* Button hover effect */
-button {
-  transition: background-color 0.2s ease;
-}
-
-button:hover {
-  background-color: #b1b1c0 !important;
-}
-
-/* Input focus effect */
-input:focus {
-  box-shadow: 0 0 0 2px rgba(195, 195, 207, 0.3);
-}
-
-/* Status indicator pulse animation for online contacts */
-@keyframes pulse {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.6;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-.bg-\[\#7DA67B\] {
-  animation: pulse 2s infinite;
+.telegram-input::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
 }

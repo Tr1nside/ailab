@@ -15,6 +15,7 @@ const socketio = io({
     withCredentials: true
 });
 
+
 // Функция для фильтрации контактов
 function filterContacts(searchTerm) {
     const contacts = document.querySelectorAll('.contact-item');
@@ -55,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeMessenger = document.getElementById('close-messenger');
     const messengerContent = document.getElementById('messenger-content');
     const searchInput = document.getElementById('contact-search');
-
+    
     // Обработчик поиска
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -168,13 +169,60 @@ document.addEventListener('DOMContentLoaded', function() {
                 attachChatListeners(userId);
                 scrollToBottom();
             });
+            
     }
     
     function attachChatListeners(userId) {
         const input = document.getElementById('message-input');
         const sendButton = document.querySelector('.send-button');
         const messagesContainer = document.getElementById('messages-container');
+        const picker = document.querySelector('emoji-picker');
+        const emojiTrigger = document.querySelector('.emoji-trigger');
+        const emojiPicker = document.querySelector('emoji-picker');
+
+
+        // Обработчик клика по кнопке
+        emojiTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            emojiPicker.classList.toggle('visible');
+        });
+        
+        // Закрытие при клике вне пикера
+        document.addEventListener('click', function(e) {
+            if (!emojiPicker.contains(e.target)) {
+            emojiPicker.classList.remove('visible');
+            }
+        });
+        
+        // Закрытие при нажатии Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+            emojiPicker.classList.remove('visible');
+            }
+        });
+        if (input) {
+            input.addEventListener('input', function() {
+                this.style.height = 'auto'; // Сброс высоты
+                this.style.height = Math.min(this.scrollHeight, 150) + 'px'; // Ограничение по max-height
+            });
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // Отменяем стандартное поведение (перенос строки)
+                    sendMessage(); // Отправляем сообщение
+                }
+                // Если Shift + Enter — перенос строки работает как обычно
+            });
     
+            // Инициализируем начальную высоту (если есть текст при загрузке)
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+        }
+        
+        picker.addEventListener('emoji-click', event => {
+            input.value += event.detail.unicode;
+            input.focus();
+        });
+
         function sendMessage() {
             const text = input.value.trim();
             if (text) {
@@ -200,12 +248,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     
         sendButton.addEventListener('click', sendMessage);
-        input.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-        
         input.focus();
         
         const backButton = document.querySelector('.back-button');

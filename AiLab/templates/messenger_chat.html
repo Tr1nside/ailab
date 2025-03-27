@@ -1,29 +1,32 @@
 <div class="chat-container">
     <div class="chat-header" data-user-id="{{ friend.id }}">
         <button class="back-button">←</button>
-        <img src="{{ url_for('static', filename='uploads/' + friend.profile.profile_photo) }}" 
-             class="contact-avatar">
+        <img src="{{ url_for('static', filename='uploads/' + friend.profile.profile_photo) }}" class="contact-avatar">
         <div class="contact-info">
             <p class="contact-name">{{ friend.profile.full_name }}</p>
             <p class="contact-status">
-                <span class="status-indicator {% if friend.is_online() %}status-online{% else %}status-offline{% endif %}" 
-                      data-user-id="{{ friend.id }}"></span>
+                <span
+                    class="status-indicator {% if friend.is_online() %}status-online{% else %}status-offline{% endif %}"
+                    data-user-id="{{ friend.id }}"></span>
                 {% if friend.is_online() %}В сети{% else %}Не в сети{% endif %}
             </p>
         </div>
     </div>
-    
+
     <div class="messages-container" id="messages-container">
         {% for message in messages %}
-        <div class="message {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
+        <div
+            class="message {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
             {{ message.text }}
             <div class="message-time" data-timestamp="{{ message.timestamp.isoformat() }}"></div>
         </div>
         {% endfor %}
     </div>
-    
+
     <div class="input-container">
         <textarea class="chat-input" placeholder="Напишите сообщение..." id="message-input" rows="1"></textarea>
-        <button class="send-button">➜</button>
+        <button class="emoji-trigger" type="button"><img src="{{ url_for('static', filename='img/icons/smile.svg') }}" alt="sun"></button>
+        <button class="send-button"><img src="{{ url_for('static', filename='img/icons/send.svg') }}" alt="sun"></button>
+        <emoji-picker class="emoji-picker"></emoji-picker>
     </div>
 </div>

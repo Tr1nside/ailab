@@ -6,6 +6,9 @@
     --messenger-input-bg: #f9f9f9;
     --online-status: #4CAF50;
     --offline-status: #ccc;
+    --scrollbar-track: #f5f5f5;
+    --scrollbar-thumb: #d8d8d8;
+    --scrollbar-thumb-hover: #c1c1c1;
 }
 
 .dark-mode {
@@ -16,6 +19,9 @@
     --messenger-input-bg: #333;
     --online-status: #4CAF50;
     --offline-status: #666;
+    --scrollbar-track: #2d2d2d;
+    --scrollbar-thumb: #555;
+    --scrollbar-thumb-hover: #666;
 }
 
 .messenger-button {
@@ -200,11 +206,25 @@
     border: 1px solid var(--messenger-border);
     background-color: var(--messenger-input-bg);
     color: var(--messenger-text);
-    margin-right: 10px;
+    margin-right: 6px;
     min-height: 20px;
     max-height: 100px;
     resize: none;
     overflow-y: auto;   
+    width: 100%;
+    outline: none;
+    line-height: 1.4;
+    scrollbar-width: thin; /* Тонкий скроллбар (для Firefox) */
+    
+}
+
+.chat-input::-webkit-scrollbar {
+    width: 4px;
+}
+  
+.chat-input::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 2px;
 }
 
 /* Стили для поиска */
@@ -276,8 +296,34 @@
     flex-direction: column !important;
     height: 100% !important;
     padding: 10px !important;
+    scrollbar-width: thin;
 }
 
+/* Общие стили для всех браузеров */
+#messages-container {
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    
+    /* Для Firefox */
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    
+    /* Для WebKit */
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    &::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+      border-radius: 4px;
+    }
+    &::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 4px;
+      &:hover {
+        background: var(--scrollbar-thumb-hover);
+      }
+    }
+  }
 /* Фиксированный контейнер ввода */
 .input-container {
     padding: 15px;
@@ -287,16 +333,32 @@
     gap: 10px;
     position: sticky;
     bottom: 0;
+    max-width: 500px;
+    box-sizing: border-box;
+    align-items: flex-end; /* Выравниваем элементы по нижнему краю */
+}
+
+.input-container img {
+    width: 23px;
+    height: 23px;
+}
+
+.emoji-trigger img {
+    width: 25px;
+    height: 25px;
 }
 
 .send-button {
-    background: #007bff;
-    color: white;
+    background: none;
     border: none;
-    border-radius: 20px;
-    padding: 0 15px;
+    font-size: 24px;
     cursor: pointer;
+    padding: 8px 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    align-self: flex-end; /* Выравниваем по низу с полем ввода */
 }
+
 
 .online { color: #4CAF50; }
 .offline { color: #F44336; }
@@ -306,3 +368,62 @@
 .message-time {
      font-size: 14px;
 }
+
+/* Стили для кнопки и пикера */
+.emoji-trigger {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 8px 4px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    align-self: flex-end; /* Выравниваем по низу с полем ввода */
+  }
+  
+  .emoji-trigger:hover {
+    opacity: 1;
+  }
+
+  .emoji-picker {
+    position: absolute;
+    bottom: 60px;
+    left: 10px;
+    width: 350px;
+    height: 400px;
+    display: none; /* По умолчанию скрыт */
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.2s, transform 0.2s;
+    /* Основные цвета */
+    --background: var(--messenger-input-bg);
+    --border-color: var(--messenger-border);
+    --color: var(--messenger-text);
+    
+    /* Заголовки категорий */
+    --category-name-background-color: var(--messenger-header-bg);
+    --category-name-font-color: #666;
+    
+    /* Кнопки */
+    --button-active-background: var(--messenger-bg);
+    --button-hover-background: var(--messenger-header-bg);
+    
+    /* Скроллбар */
+    --scrollbar-thumb-color: var(--messenger-bg);
+    --scrollbar-track-color: var(--messenger-header-bg);
+    /* Ширина скроллбара */
+    --scrollbar-width: 6px;
+    
+    /* Скругление углов */
+    --scrollbar-border-radius: 3px;
+}
+  
+  /* Показываем пикер при наличии класса .visible */
+  .emoji-picker.visible {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+ 
