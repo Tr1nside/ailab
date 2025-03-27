@@ -6,7 +6,7 @@ from flask import (
     redirect,
     url_for,
     jsonify,
-    abort
+    abort,
 )  # Импортируем необходимые модули из Flask
 from urllib.parse import urlsplit
 import eventlet  # Импортируем eventlet для работы с асинхронными событиями
@@ -292,8 +292,13 @@ def send_message():
             return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
 
         recipient_id = data.get('recipient_id')
+        
         text = data.get('text')
         
+        text = text.replace('\n', '<br>')
+
+        print(text)
+
         if not recipient_id or not text:
             return jsonify({'success': False, 'error': 'Missing recipient_id or text'}), 400
 
