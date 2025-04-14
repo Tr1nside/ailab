@@ -32,6 +32,13 @@ main_bp = Blueprint("main_bp", __name__)  # Создаём Blueprint для ор
 appdir = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(appdir, '../static/uploads')
 
+CONTEXT_MENU_ITEMS = {
+    "message": [
+        {"label": "Редактировать", "action": "edit"},
+        {"label": "Удалить", "action": "delete"}
+    ]
+}
+
 @main_bp.route(
     "/"
 )  # Определяем маршрут для главной страницы, доступной по адресу http://127.0.0.1:5000/
@@ -356,7 +363,7 @@ def mark_as_read(sender_id):
     Message.query.filter(
         Message.sender_id == sender_id,
         Message.recipient_id == current_user.id,
-        Message.is_read == False
+        Message.is_read is False
     ).update({'is_read': True})
     db.session.commit()
     return jsonify({'success': True})
@@ -372,9 +379,62 @@ def mark_message_read(message_id):
     db.session.commit()
     return jsonify({'success': True})
 
-pending_inputs = {}  # Общий словарь для хранения событий ожидания ввода
-# извините, пусть оно просто тут полежит иначе все крашится) (пусть это будет дань уважения генеративному ИИ)
+@main_bp.route('/api/context-menu', methods=['GET'])
+def get_context_menu():
+    context_type = request.args.get('type')  # file, folder и т. д.
+    menu_items = CONTEXT_MENU_ITEMS.get(context_type, [])
+    return jsonify({"items": menu_items})
 
+@main_bp.route('/api/execute-action', methods=['POST'])
+def execute_action():
+    try:
+        data = request.get_json()
+        action = data.get('action')
+        element_data = data.get('element')
+
+        print(f"Received action: {action}, element data: {element_data}")  # Для дебага
+
+        if action == "delete":
+            item_id = element_data.get('id')
+            item = Message.query.get_or_404(item_id)
+            if item.sender_id != current_user.id:
+                return jsonify({"status": "error", "message": "Вы можете удалять только свои сообщения"}), 403
+            recipient_id = item.recipient_id
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify({"status": "success", "message": f"Сообщение {item_id} удалено", "recipient_id": recipient_id})
+
+        elif action == "edit":
+            item_id = element_data.get('id')
+            new_text = element_data.get('content')
+            item = Message.query.get_or_404(item_id)
+            if item.sender_id != current_user.id:
+                return jsonify({"status": "error", "message": "Вы можете редактировать только свои сообщения"}), 403
+            if not new_text.strip():
+                return jsonify({"status": "error", "message": "Текст сообщения не может быть пустым"}), 400
+            item.text = new_text.strip()
+            db.session.commit()
+            return jsonify({"status": "success", "message": f"Сообщение {item_id} отредактировано", "recipient_id": item.recipient_id})
+
+        elif action == "clear_history":
+            recipient_id = element_data.get('recipient_id')
+            Message.query.filter(
+                or_(
+                    and_(Message.sender_id == current_user.id, Message.recipient_id == recipient_id),
+                    and_(Message.sender_id == recipient_id, Message.recipient_id == current_user.id)
+                )
+            ).delete()
+            db.session.commit()
+            return jsonify({"status": "success", "message": "История чата очищена", "recipient_id": recipient_id})
+
+        else:
+            return jsonify({"status": "error", "message": "Неизвестное действие"}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+pending_inputs = {}  # Общий словарь для хранения событий ожидания ввода
 
 def register_socketio_events(socketio):
     """

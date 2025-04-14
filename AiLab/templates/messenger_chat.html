@@ -11,22 +11,31 @@
                 {% if friend.is_online() %}В сети{% else %}Не в сети{% endif %}
             </p>
         </div>
+        <button class="back-button" id="clear-history">delete</button>
     </div>
 
     <div class="messages-container" id="messages-container">
         {% for message in messages %}
-        <div
-            class="message {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}">
-            {{ message.text|safe }}
-            <div class="message-time" data-timestamp="{{ message.timestamp.isoformat() }}"></div>
+        <div class="message context-area {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}" data-id="{{ message.id }}" data-context-type="message">
+            <div class="message-text context-area" data-id="{{ message.id }}" data-context-type="message">{{ message.text|safe }}</div>
+            <div class="message-second-data context-area" data-id="{{ message.id }}" data-context-type="message">
+                <div class="message-time" data-timestamp="{{ message.timestamp.isoformat() }}"></div>
+                {% if message.sender_id == current_user.id %}
+                <span class="message-status">
+                    {% if message.is_read %}
+                        <span class="double-check">✓✓</span>
+                    {% else %}
+                        <span class="single-check">✓</span>
+                    {% endif %}
+                </span>
+                {% endif %}
+            </div>
         </div>
         {% endfor %}
     </div>
 
     <div class="input-container">
         <textarea class="chat-input" placeholder="Напишите сообщение..." id="message-input" rows="1"></textarea>
-        <button class="emoji-trigger" type="button"><img src="{{ url_for('static', filename='img/icons/smile.svg') }}" alt="sun"></button>
         <button class="send-button"><img src="{{ url_for('static', filename='img/icons/send.svg') }}" alt="sun"></button>
-        <emoji-picker class="emoji-picker"></emoji-picker>
     </div>
 </div>

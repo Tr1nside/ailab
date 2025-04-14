@@ -15,6 +15,8 @@ const socketio = io({
     withCredentials: true
 });
 
+const messengerContainer = document.getElementById('messenger-container');
+const current_user_id = parseInt(messengerContainer.dataset.userId) || 0;
 
 // Функция для фильтрации контактов
 function filterContacts(searchTerm) {
@@ -56,7 +58,170 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeMessenger = document.getElementById('close-messenger');
     const messengerContent = document.getElementById('messenger-content');
     const searchInput = document.getElementById('contact-search');
+    const contextMenu = document.getElementById('contextMenu');
+    const contextMenuList = document.getElementById('contextMenuList');
+    let currentContextType = null;
+    let currentContextElement = null; // Добавляем переменную для хранения элемента
     
+
+    // Обработчик правого клика
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        
+        const contextArea = e.target.closest('.context-area');
+        if (!contextArea) return;
+    
+        currentContextType = contextArea.dataset.contextType;
+        currentContextElement = contextArea; // Сохраняем элемент
+        loadContextMenu(currentContextType, e.clientX, e.clientY);
+    });
+    
+    // Закрытие меню при клике вне его
+    document.addEventListener('click', () => {
+        contextMenu.style.display = 'none';
+    });
+    
+    // Загрузка меню с сервера
+    async function loadContextMenu(contextType, x, y) {
+        try {
+            const response = await fetch(`/api/context-menu?type=${contextType}`);
+            const data = await response.json();
+            renderContextMenu(data.items, x, y);
+        } catch (error) {
+            console.error('Ошибка загрузки меню:', error);
+        }
+    }
+    
+    // Отрисовка пунктов меню
+    function renderContextMenu(items, x, y) {
+        contextMenuList.innerHTML = '';
+        
+        items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.label;
+            li.addEventListener('click', () => handleMenuAction(item.action));
+            contextMenuList.appendChild(li);
+        });
+    
+        contextMenu.style.left = `${x}px`;
+        contextMenu.style.top = `${y}px`;
+        contextMenu.style.display = 'block';
+    }
+    
+    // Обработка выбора пункта меню
+    function handleMenuAction(action) {
+        if (!currentContextElement) return; // Проверяем, что элемент сохранён
+    
+        if (action === "edit") {
+            const messageElement = currentContextElement.closest('.message');
+            const messageTextElement = messageElement.querySelector('.message-text');
+            const messageId = currentContextElement.dataset.id;
+            const originalText = messageTextElement.innerText;
+    
+            // Создаём поле ввода
+            const input = document.createElement('textarea');
+            input.value = originalText;
+            input.classList.add('edit-message-input');
+            input.style.width = '100%';
+            input.style.minHeight = '40px';
+    
+            // Заменяем текст на поле ввода
+            messageTextElement.innerHTML = '';
+            messageTextElement.appendChild(input);
+            input.focus();
+    
+            // Обработчик сохранения
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const newText = input.value.trim();
+                    if (newText && newText !== originalText) {
+                        const postData = {
+                            action: 'edit',
+                            element: {
+                                id: messageId,
+                                type: currentContextType,
+                                content: newText
+                            }
+                        };
+    
+                        fetch('/api/execute-action', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCookie('csrf_token')
+                            },
+                            body: JSON.stringify(postData)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === "success") {
+                                messageTextElement.innerText = newText;
+                                const recipientId = data.recipient_id;
+                                if (recipientId) loadChat(recipientId); // Обновляем чат
+                            } else {
+                                alert("Ошибка: " + data.message);
+                                messageTextElement.innerText = originalText; // Восстанавливаем текст
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Ошибка:", error);
+                            alert("Не удалось сохранить изменения");
+                            messageTextElement.innerText = originalText;
+                        });
+                    } else {
+                        messageTextElement.innerText = originalText; // Восстанавливаем текст
+                    }
+                }
+                if (e.key === 'Escape') {
+                    messageTextElement.innerText = originalText; // Отмена
+                }
+            });
+    
+            contextMenu.style.display = 'none';
+            return;
+        }
+    
+        // Логика для других действий (delete, clear_history)
+        const postData = {
+            action: action,
+            element: {
+                id: currentContextElement.dataset.id,
+                type: currentContextType,
+                content: currentContextElement.innerText
+            }
+        };
+    
+        fetch('/api/execute-action', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrf_token')
+            },
+            body: JSON.stringify(postData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Server response:", data);
+            if (data.status === "success") {
+                if (action === "delete") {
+                    currentContextElement.closest('.message').remove();
+                } else if (action === "clear_history") {
+                    const recipientId = data.recipient_id;
+                    if (recipientId) loadChat(recipientId);
+                }
+            } else {
+                alert("Ошибка: " + data.message);
+            }
+        })
+        .catch(error => {
+            console.error("Ошибка:", error);
+            alert("Не удалось выполнить действие");
+        });
+    
+        contextMenu.style.display = 'none';
+    }
+
     // Обработчик поиска
     if (searchInput) {
         searchInput.addEventListener('input', function() {
@@ -158,48 +323,60 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.text())
             .then(html => {
                 document.getElementById('messenger-content').innerHTML = html;
-                formatMessageTimes(); // Вызов функции форматирования
-                
+                formatMessageTimes(); // Форматирование времени
+                scrollToBottom();
+    
                 // Пометить сообщения как прочитанные
-                fetch(`/messenger/mark_as_read/${userId}`, { 
+                fetch(`/messenger/mark_as_read/${userId}`, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': getCookie('csrf_token') }
                 }).then(() => checkNewMessages());
-                
+    
                 attachChatListeners(userId);
-                scrollToBottom();
             });
-            
     }
     
     function attachChatListeners(userId) {
         const input = document.getElementById('message-input');
         const sendButton = document.querySelector('.send-button');
         const messagesContainer = document.getElementById('messages-container');
-        const picker = document.querySelector('emoji-picker');
-        const emojiTrigger = document.querySelector('.emoji-trigger');
-        const emojiPicker = document.querySelector('emoji-picker');
+        const clearButton = document.getElementById('clear-history');
 
+        clearButton.addEventListener('click', () => {
+            const status = document.querySelector('.status-indicator')
+            const recipient_id = status.dataset.userId
+            const user_id = current_user_id
+            
+            const postData = {
+                action: "clear_history",
+                element: {
+                    recipient_id: recipient_id 
+                }
+            };
+        
+            // Отправка на сервер
+            fetch('/api/execute-action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(postData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log("Server response:", data);
+                if (data.status === "success") {
+                    loadChat(userId)
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                alert("Request failed");
+            });
+        });
 
-        // Обработчик клика по кнопке
-        emojiTrigger.addEventListener('click', function(e) {
-            e.stopPropagation();
-            emojiPicker.classList.toggle('visible');
-        });
-        
-        // Закрытие при клике вне пикера
-        document.addEventListener('click', function(e) {
-            if (!emojiPicker.contains(e.target)) {
-            emojiPicker.classList.remove('visible');
-            }
-        });
-        
-        // Закрытие при нажатии Escape
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-            emojiPicker.classList.remove('visible');
-            }
-        });
         if (input) {
             input.addEventListener('input', function() {
                 this.style.height = 'auto'; // Сброс высоты
@@ -218,10 +395,6 @@ document.addEventListener('DOMContentLoaded', function() {
             input.style.height = Math.min(input.scrollHeight, 150) + 'px';
         }
         
-        picker.addEventListener('emoji-click', event => {
-            input.value += event.detail.unicode;
-            input.focus();
-        });
 
         function sendMessage() {
             const text = input.value.trim();
@@ -294,18 +467,21 @@ document.addEventListener('DOMContentLoaded', function() {
             formatMessageTimes();
             // Быстрое обновление счетчика
             const badge = document.getElementById('unread-count');
-            if (badge) {
+            if (badge && data.sender_id != current_user_id) { // Не увеличиваем счётчик для своих сообщений
                 const currentCount = parseInt(badge.textContent) || 0;
                 badge.textContent = currentCount + 1;
                 badge.classList.remove('hidden');
             }
-
-            playNotificationSound()
-
-            // Обновляем чат если он открыт
+        
+            playNotificationSound();
+        
+            // Обновляем чат, если он открыт
             const currentChat = document.querySelector('.chat-header');
             if (currentChat && currentChat.dataset.userId == data.sender_id) {
                 loadChat(data.sender_id);
+            } else if (currentChat && currentChat.dataset.userId == data.recipient_id && data.sender_id == current_user_id) {
+                // Если это наше сообщение в открытом чате, обновляем его
+                loadChat(data.recipient_id);
             }
         });
 
