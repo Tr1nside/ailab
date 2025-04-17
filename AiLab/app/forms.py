@@ -7,7 +7,7 @@ from wtforms.validators import (
     EqualTo,
     Length,
     Regexp,
-    Optional
+    Optional,
 )
 from flask_wtf.file import FileField, FileAllowed
 from werkzeug.security import check_password_hash
@@ -99,29 +99,49 @@ class RegistrationForm(FlaskForm):
         if user is not None:
             raise ValidationError("Данная почта уже используется")
 
+
 class ProfileEditForm(FlaskForm):
     profile_media = FileField(
-        'Медиа профиля',
-        validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'mp4', 'webm'], 'Разрешены только изображения и видео')]
+        "Медиа профиля",
+        validators=[
+            FileAllowed(
+                ["jpg", "jpeg", "png", "gif", "mp4", "webm"],
+                "Разрешены только изображения и видео",
+            )
+        ],
     )
-    full_name = StringField('Полное имя', validators=[DataRequired()])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    phone = StringField('Телефон', validators=[
-        Optional(),
-        Regexp(r'^\+?[1-9]\d{1,14}$', message='Неверный формат телефона')
-    ])
-    position = StringField('Должность', validators=[
-        Optional()])
-    telegram_link = StringField('Telegram', validators=[
-        Optional(),
-        Regexp(r'^https://t\.me/\w+', message='Формат: https://t.me/username')
-    ])
-    github_link = StringField('GitHub', validators=[
-        Optional(),
-        Regexp(r'^https://github\.com/\w+', message='Формат: https://github.com/username')
-    ])
-    vk_link = StringField('VK', validators=[
-        Optional(),
-        Regexp(r'^https://vk\.com/\w+', message='Формат: https://vk.com/username')
-    ])
-    submit = SubmitField('Сохранить')
+    full_name = StringField("Полное имя", validators=[DataRequired()])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    phone = StringField(
+        "Телефон",
+        validators=[
+            Optional(),
+            Regexp(r"^\+?[1-9]\d{1,14}$", message="Неверный формат телефона"),
+        ],
+    )
+    position = StringField("Должность", validators=[Optional()])
+    telegram_link = StringField(
+        "Telegram",
+        validators=[
+            Optional(),
+            Regexp(r"^https://t\.me/\w+", message="Формат: https://t.me/username"),
+        ],
+    )
+    github_link = StringField(
+        "GitHub",
+        validators=[
+            Optional(),
+            Regexp(
+                r"^https://github\.com/\w+",
+                message="Формат: https://github.com/username",
+            ),
+        ],
+    )
+    vk_link = StringField(
+        "VK",
+        validators=[
+            Optional(),
+            Regexp(r"^https://vk\.com/\w+", message="Формат: https://vk.com/username"),
+        ],
+    )
+    submit = SubmitField("Сохранить")

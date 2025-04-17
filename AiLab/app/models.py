@@ -14,17 +14,23 @@ class User(UserMixin, db.Model):
     first_name: so.Mapped[str] = so.mapped_column(sa.String(50), nullable=False)
     middle_name: so.Mapped[str] = so.mapped_column(sa.String(50), nullable=False)
     password_hash: so.Mapped[Optional[str]] = so.mapped_column(sa.String(256))
-    last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(sa.DateTime, default=datetime.utcnow)
-    
+    last_seen: so.Mapped[Optional[datetime]] = so.mapped_column(
+        sa.DateTime, default=datetime.utcnow
+    )
+
     # Двусторонняя связь с моделью UserProfile (один к одному)
     profile: so.Mapped[Optional["UserProfile"]] = db.relationship(
-        "UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan"
+        "UserProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
     )
 
     def is_online(self):
         if self.last_seen:
             return (datetime.utcnow() - self.last_seen).total_seconds() < 300  # 5 минут
         return False
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
@@ -33,19 +39,25 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f"<User {self.email}>"
-    
+
     def is_friend(self, friend_id):
-        return Friendship.query.filter(
-            ((Friendship.user_id == self.id) & (Friendship.friend_id == friend_id)) |
-            ((Friendship.user_id == friend_id) & (Friendship.friend_id == self.id)),
-            Friendship.status == 'accepted'
-        ).first() is not None
-    
+        return (
+            Friendship.query.filter(
+                ((Friendship.user_id == self.id) & (Friendship.friend_id == friend_id))
+                | (
+                    (Friendship.user_id == friend_id)
+                    & (Friendship.friend_id == self.id)
+                ),
+                Friendship.status == "accepted",
+            ).first()
+            is not None
+        )
+
     def get_friends(self):
         # Получаем подтвержденные дружеские связи
         friendships = Friendship.query.filter(
             ((Friendship.user_id == self.id) | (Friendship.friend_id == self.id)),
-            Friendship.status == 'accepted'
+            Friendship.status == "accepted",
         ).all()
 
         friends = []
@@ -57,7 +69,7 @@ class User(UserMixin, db.Model):
             friends.append(friend)
 
         return friends
-    
+
     @classmethod
     def get_friendship_status(cls, user_id, friend_id):
         """
@@ -76,15 +88,15 @@ class User(UserMixin, db.Model):
         ).first()
 
         if friendshipU_F:
-            if friendshipU_F.status == 'accepted':
-                return 'accepted'
-            elif friendshipU_F.status == 'pending':
-                return 'U_F'
+            if friendshipU_F.status == "accepted":
+                return "accepted"
+            elif friendshipU_F.status == "pending":
+                return "U_F"
         elif friendshipF_U:
-            if friendshipF_U.status == 'accepted':
-                return 'accepted'
-            elif friendshipF_U.status == 'pending':
-                return 'F_U'
+            if friendshipF_U.status == "accepted":
+                return "accepted"
+            elif friendshipF_U.status == "pending":
+                return "F_U"
         return None
 
 
@@ -92,9 +104,12 @@ class User(UserMixin, db.Model):
 def load_user(id):
     return db.session.get(User, int(id))
 
+
 class UserProfile(db.Model):
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
-    user_id: so.Mapped[int] = so.mapped_column(sa.Integer, db.ForeignKey('user.id'), unique=True, nullable=False)
+    user_id: so.Mapped[int] = so.mapped_column(
+        sa.Integer, db.ForeignKey("user.id"), unique=True, nullable=False
+    )
     full_name: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
     email: so.Mapped[Optional[str]] = so.mapped_column(sa.String(120))
     phone: so.Mapped[Optional[str]] = so.mapped_column(sa.String(20))
@@ -106,28 +121,44 @@ class UserProfile(db.Model):
     vk_link: so.Mapped[Optional[str]] = so.mapped_column(sa.String(100))
 
     # Обратная связь, позволяющая получить пользователя, которому принадлежит профиль
-    user: so.Mapped["User"] = db.relationship('User', back_populates='profile')
-    
-    
+    user: so.Mapped["User"] = db.relationship("User", back_populates="profile")
+
 
 # models.py
 class Friendship(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    friend_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending/accepted/declined
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    friend_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    status = db.Column(db.String(20), default="pending")  # pending/accepted/declined
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Отношение к пользователям
-    user = db.relationship('User', foreign_keys=[user_id], backref='sent_requests')
-    friend = db.relationship('User', foreign_keys=[friend_id], backref='received_requests')
+    user = db.relationship("User", foreign_keys=[user_id], backref="sent_requests")
+    friend = db.relationship(
+        "User", foreign_keys=[friend_id], backref="received_requests"
+    )
+
+
+class Attachment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message_id = db.Column(db.Integer, db.ForeignKey("message.id"), nullable=False)
+    url = db.Column(db.String(512), nullable=False)
+    mime_type = db.Column(db.String(100), nullable=False)
+
+    message = db.relationship("Message", back_populates="attachments")
+
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    text = db.Column(db.Text, nullable=False)
-    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    text = db.Column(db.Text, nullable=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    recipient_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
-    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
-    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
+    sender = db.relationship("User", foreign_keys=[sender_id], backref="sent_messages")
+    recipient = db.relationship(
+        "User", foreign_keys=[recipient_id], backref="received_messages"
+    )
+    attachments = db.relationship(
+        "Attachment", back_populates="message", cascade="all, delete-orphan"
+    )

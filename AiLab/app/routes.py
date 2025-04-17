@@ -8,20 +8,22 @@ from flask import (
     jsonify,
     abort,
 )  # Импортируем необходимые модули из Flask
-from urllib.parse import urlsplit
 import eventlet  # Импортируем eventlet для работы с асинхронными событиями
 import builtins  # Импортируем встроенные функции Python
 import contextlib  # Импортируем contextlib для управления контекстами
 import io  # Импортируем io для работы с потоками ввода-вывода
+import sqlalchemy as sa
+import os
+from urllib.parse import urlsplit
 from .forms import LoginForm, RegistrationForm, ProfileEditForm
 from flask_login import current_user, login_user
 from flask_login import logout_user
-import sqlalchemy as sa
+from sqlalchemy import or_, and_
+from sqlalchemy.orm import joinedload
 from .extensions import db
-from .models import User, UserProfile, Friendship, Message
+from .models import User, UserProfile, Friendship, Message, Attachment
 from flask_login import login_required
 from werkzeug.utils import secure_filename
-import os
 from .funcs import generate_qr_code
 from datetime import datetime
 from .extensions import socketio
@@ -30,14 +32,15 @@ from flask_socketio import join_room, leave_room, emit
 
 main_bp = Blueprint("main_bp", __name__)  # Создаём Blueprint для организации маршрутов
 appdir = os.path.abspath(os.path.dirname(__file__))
-UPLOAD_FOLDER = os.path.join(appdir, '../static/uploads')
+UPLOAD_FOLDER = os.path.join(appdir, "../static/uploads")
 
 CONTEXT_MENU_ITEMS = {
     "message": [
         {"label": "Редактировать", "action": "edit"},
-        {"label": "Удалить", "action": "delete"}
+        {"label": "Удалить", "action": "delete"},
     ]
 }
+
 
 @main_bp.route(
     "/"
@@ -46,12 +49,13 @@ CONTEXT_MENU_ITEMS = {
 def index():
     return render_template("index.html")  # Возвращаем HTML-шаблон index.html
 
-@main_bp.route('/profile/<int:id>', methods=['GET', 'POST'])
+
+@main_bp.route("/profile/<int:id>", methods=["GET", "POST"])
 @login_required
 def profile(id):
     profile = db.first_or_404(sa.select(UserProfile).where(UserProfile.user_id == id))
     form = ProfileEditForm()
-    
+
     if form.validate_on_submit():
         try:
             # Обновляем текстовые поля
@@ -72,14 +76,14 @@ def profile(id):
                 profile.profile_photo = filename
 
             db.session.commit()
-            flash('Данные успешно сохранены!', 'success')
-            return redirect(url_for('main_bp.profile', id=id))  # Редирект с ID
+            flash("Данные успешно сохранены!", "success")
+            return redirect(url_for("main_bp.profile", id=id))  # Редирект с ID
 
         except Exception as e:
             db.session.rollback()
             print(e)
 
-    elif request.method == 'GET':
+    elif request.method == "GET":
         # Заполняем форму данными из БД
         form.full_name.data = profile.full_name
         form.email.data = profile.email
@@ -89,13 +93,26 @@ def profile(id):
         form.github_link.data = profile.github_link
         form.vk_link.data = profile.vk_link
 
-    return render_template('profile.html', profile=profile, id=id, current_endpoint=request.endpoint, form=form)
+    return render_template(
+        "profile.html",
+        profile=profile,
+        id=id,
+        current_endpoint=request.endpoint,
+        form=form,
+    )
 
-@main_bp.route("/ide")  # Определяем маршрут для главной страницы, доступной по адресу http://127.0.0.1:5000/
+
+@main_bp.route(
+    "/ide"
+)  # Определяем маршрут для главной страницы, доступной по адресу http://127.0.0.1:5000/
 @login_required
 def ide():
-    profile = db.first_or_404(sa.select(UserProfile).where(UserProfile.user_id == current_user.id))
-    return render_template("ide.html", current_endpoint=request.endpoint, profile=profile)  # Возвращаем HTML-шаблон index.html
+    profile = db.first_or_404(
+        sa.select(UserProfile).where(UserProfile.user_id == current_user.id)
+    )
+    return render_template(
+        "ide.html", current_endpoint=request.endpoint, profile=profile
+    )  # Возвращаем HTML-шаблон index.html
 
 
 @main_bp.route("/login", methods=["GET", "POST"])
@@ -135,10 +152,14 @@ def register():
             middle_name=form.middle_name.data,
             email=form.email.data,
         )
-        full_name = " ".join(filter(None, [form.last_name.data, form.first_name.data, form.middle_name.data]))
+        full_name = " ".join(
+            filter(
+                None, [form.last_name.data, form.first_name.data, form.middle_name.data]
+            )
+        )
         user.profile = UserProfile(email=form.email.data, full_name=full_name)
         user.set_password(form.password.data)
-        user.profile.profile_photo = 'standart.png'
+        user.profile.profile_photo = "standart.png"
 
         qr_filename = generate_qr_code(user.id, user.email, False)
         user.profile.qr_photo = qr_filename
@@ -146,286 +167,427 @@ def register():
         db.session.add(user)
         db.session.commit()
         qr_filename = generate_qr_code(user.id, user.email, True)
-        
+
         flash("Congratulations, you are now a registered user!")
         return redirect(url_for("main_bp.login"))
     return render_template("register.html", title="Register", form=form)
 
 
-@main_bp.route('/add_friend', methods=['POST'])
+@main_bp.route("/add_friend", methods=["POST"])
 @login_required
 def add_friend():
-    friend_id = request.form.get('friend_id')
-    
+    friend_id = request.form.get("friend_id")
+
     # Проверка: нельзя добавить себя
     if current_user.id == int(friend_id):
         flash("Нельзя добавить себя в друзья", "error")
-        return redirect(url_for('main_bp.profile', id=friend_id))
-    
+        return redirect(url_for("main_bp.profile", id=friend_id))
+
     # Проверка существующего запроса
     existing = Friendship.query.filter(
-        ((Friendship.user_id == current_user.id) & (Friendship.friend_id == friend_id)) |
-        ((Friendship.user_id == friend_id) & (Friendship.friend_id == current_user.id))
+        ((Friendship.user_id == current_user.id) & (Friendship.friend_id == friend_id))
+        | (
+            (Friendship.user_id == friend_id)
+            & (Friendship.friend_id == current_user.id)
+        )
     ).first()
-    
+
     if existing:
         flash("Запрос на дружбу уже существует", "info")
-        return redirect(url_for('main_bp.profile', id=friend_id))
-    
+        return redirect(url_for("main_bp.profile", id=friend_id))
+
     # Создание нового запроса
     new_request = Friendship(
-        user_id=current_user.id,
-        friend_id=friend_id,
-        status='pending'
+        user_id=current_user.id, friend_id=friend_id, status="pending"
     )
     db.session.add(new_request)
     db.session.commit()
-    
+
     flash("Запрос на дружбу отправлен!", "success")
-    return redirect(url_for('main_bp.profile', id=friend_id))
+    return redirect(url_for("main_bp.profile", id=friend_id))
+
 
 # routes.py
-@main_bp.route('/friend_requests')
+@main_bp.route("/friend_requests")
 @login_required
 def friend_requests():
     # Входящие запросы
     incoming = Friendship.query.filter(
-        Friendship.friend_id == current_user.id,
-        Friendship.status == 'pending'
+        Friendship.friend_id == current_user.id, Friendship.status == "pending"
     ).all()
 
     # Исходящие запросы
     outgoing = Friendship.query.filter(
-        Friendship.user_id == current_user.id,
-        Friendship.status == 'pending'
+        Friendship.user_id == current_user.id, Friendship.status == "pending"
     ).all()
 
     # Список друзей
     friends = current_user.get_friends()
-    profile = db.first_or_404(sa.select(UserProfile).where(UserProfile.user_id == current_user.id))
-    return render_template('friend_requests.html', incoming=incoming, outgoing=outgoing, friends=friends, profile=profile)
+    profile = db.first_or_404(
+        sa.select(UserProfile).where(UserProfile.user_id == current_user.id)
+    )
+    return render_template(
+        "friend_requests.html",
+        incoming=incoming,
+        outgoing=outgoing,
+        friends=friends,
+        profile=profile,
+    )
+
 
 # routes.py
-@main_bp.route('/accept_request/<int:request_id>', methods=['POST'])
+@main_bp.route("/accept_request/<int:request_id>", methods=["POST"])
 @login_required
 def accept_request(request_id):
     request = Friendship.query.get_or_404(request_id)
-    
+
     if request.friend_id != current_user.id:
         flash("Вы не можете подтвердить этот запрос", "error")
-        return redirect(url_for('main_bp.friend_requests'))
-    
-    request.status = 'accepted'
+        return redirect(url_for("main_bp.friend_requests"))
+
+    request.status = "accepted"
     db.session.commit()
-    
+
     flash("Запрос на дружбу подтвержден!", "success")
-    return redirect(url_for('main_bp.friend_requests'))
+    return redirect(url_for("main_bp.friend_requests"))
+
 
 # routes.py
-@main_bp.route('/decline_request/<int:request_id>', methods=['POST'])
+@main_bp.route("/decline_request/<int:request_id>", methods=["POST"])
 @login_required
 def decline_request(request_id):
     request = Friendship.query.get_or_404(request_id)
-    
+
     if request.friend_id != current_user.id:
         flash("Вы не можете отклонить этот запрос", "error")
-        return redirect(url_for('main_bp.friend_requests'))
-    
+        return redirect(url_for("main_bp.friend_requests"))
+
     db.session.delete(request)
     db.session.commit()
-    
+
     flash("Запрос на дружбу отклонен", "info")
-    return redirect(url_for('main_bp.friend_requests'))
+    return redirect(url_for("main_bp.friend_requests"))
+
 
 # routes.py
-@main_bp.route('/cancel_request/<int:request_id>', methods=['POST'])
+@main_bp.route("/cancel_request/<int:request_id>", methods=["POST"])
 @login_required
 def cancel_request(request_id):
     request = Friendship.query.get_or_404(request_id)
-    
+
     if request.user_id != current_user.id:
         flash("Вы не можете отменить этот запрос", "error")
-        return redirect(url_for('main_bp.friend_requests'))
-    
+        return redirect(url_for("main_bp.friend_requests"))
+
     db.session.delete(request)
     db.session.commit()
-    
+
     flash("Запрос на дружбу отменен", "info")
-    return redirect(url_for('main_bp.friend_requests'))
+    return redirect(url_for("main_bp.friend_requests"))
+
 
 # routes.py
-@main_bp.route('/remove_friend/<int:friend_id>', methods=['POST'])
+@main_bp.route("/remove_friend/<int:friend_id>", methods=["POST"])
 @login_required
 def remove_friend(friend_id):
     # Находим дружескую связь
     friendship = Friendship.query.filter(
-        ((Friendship.user_id == current_user.id) & (Friendship.friend_id == friend_id)) |
-        ((Friendship.user_id == friend_id) & (Friendship.friend_id == current_user.id)),
-        Friendship.status == 'accepted'
+        ((Friendship.user_id == current_user.id) & (Friendship.friend_id == friend_id))
+        | (
+            (Friendship.user_id == friend_id)
+            & (Friendship.friend_id == current_user.id)
+        ),
+        Friendship.status == "accepted",
     ).first()
 
     if not friendship:
         flash("Пользователь не найден в списке друзей", "error")
-        return redirect(url_for('main_bp.friend_requests'))
+        return redirect(url_for("main_bp.friend_requests"))
 
     # Удаляем дружескую связь
     db.session.delete(friendship)
     db.session.commit()
 
     flash("Пользователь удален из друзей", "success")
-    return redirect(url_for('main_bp.friend_requests'))
-@main_bp.route('/messenger/contacts')
+    return redirect(url_for("main_bp.friend_requests"))
+
+
+@main_bp.route("/messenger/contacts")
 @login_required
 def messenger_contacts():
     friends = current_user.get_friends()
-    return render_template('messenger_contacts.html', friends=friends)
+    return render_template("messenger_contacts.html", friends=friends)
 
-@main_bp.route('/messenger/chat/<int:user_id>')
+
+@main_bp.route("/messenger/chat/<int:user_id>")
 @login_required
 def messenger_chat(user_id):
     friend = User.query.get_or_404(user_id)
-    messages = Message.query.filter(
-        ((Message.sender_id == current_user.id) & (Message.recipient_id == user_id)) |
-        ((Message.sender_id == user_id) & (Message.recipient_id == current_user.id))
-    ).order_by(Message.timestamp.asc()).all()
-    return render_template('messenger_chat.html', friend=friend, messages=messages)
 
-@main_bp.route('/messenger/send', methods=['POST'])
+    messages = (
+        Message.query.options(
+            joinedload(Message.attachments)
+        )  # <-- заранее подгружаем attachments
+        .filter(
+            ((Message.sender_id == current_user.id) & (Message.recipient_id == user_id))
+            | (
+                (Message.sender_id == user_id)
+                & (Message.recipient_id == current_user.id)
+            )
+        )
+        .order_by(Message.timestamp.asc())
+        .all()
+    )
+
+    return render_template("messenger_chat.html", friend=friend, messages=messages)
+
+
+@main_bp.route("/messenger/send", methods=["POST"])
 @login_required
 def send_message():
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({'success': False, 'error': 'Invalid JSON data'}), 400
+        # 1) Текстовые сообщения в формате JSON
+        if request.content_type.startswith("application/json"):
+            data = request.get_json()
+            if not data:
+                return jsonify({"success": False, "error": "Invalid JSON data"}), 400
 
-        recipient_id = data.get('recipient_id')
-        
-        text = data.get('text')
-        
-        text = text.replace('\n', '<br>')
+            recipient_id = data.get("recipient_id")
+            text = data.get("text", "").replace("\n", "<br>")
 
-        print(text)
+            if not recipient_id or not text:
+                return jsonify(
+                    {"success": False, "error": "Missing recipient_id or text"}
+                ), 400
 
-        if not recipient_id or not text:
-            return jsonify({'success': False, 'error': 'Missing recipient_id or text'}), 400
+            recipient = db.session.get(User, recipient_id)
+            if not recipient:
+                return jsonify({"success": False, "error": "Recipient not found"}), 404
 
-        # Проверяем существование получателя
+            message = Message(
+                sender_id=current_user.id,
+                recipient_id=recipient_id,
+                text=text,
+                is_read=False,
+            )
+            db.session.add(message)
+            db.session.commit()
+
+            message_data = {
+                "id": message.id,
+                "sender_id": message.sender_id,
+                "recipient_id": message.recipient_id,
+                "text": message.text,
+                "attachments": [],
+                "timestamp": message.timestamp.isoformat(),
+                "is_read": message.is_read,
+            }
+
+            socketio.emit("new_message", message_data, room=f"user_{recipient_id}")
+            socketio.emit("new_message", message_data, room=f"user_{current_user.id}")
+            return jsonify({"success": True, "message": message_data})
+
+        # 2) Form-data с текстом и/или файлами
+        recipient_id = request.form.get("recipient_id", type=int)
+        text = request.form.get("text", "").replace("\n", "<br>")
+
+        if not recipient_id or (not text and "files" not in request.files):
+            return jsonify(
+                {"success": False, "error": "Missing recipient_id or content"}
+            ), 400
+
         recipient = db.session.get(User, recipient_id)
         if not recipient:
-            return jsonify({'success': False, 'error': 'Recipient not found'}), 404
+            return jsonify({"success": False, "error": "Recipient not found"}), 404
 
+        # Создаём сообщение
         message = Message(
             sender_id=current_user.id,
             recipient_id=recipient_id,
-            text=text,
-            is_read=False
+            text=text or None,
+            is_read=False,
         )
         db.session.add(message)
+        db.session.flush()  # чтобы получить message.id для вложений
+
+        # Обрабатываем вложения
+        files = request.files.getlist("files")
+        allowed_ext = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "pdf", "doc", "docx"}
+        attachments_data = []
+
+        # Обеспечиваем существование папки
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+        for f in files:
+            if f and f.filename:
+                ext = f.filename.rsplit(".", 1)[-1].lower()
+                if ext not in allowed_ext:
+                    continue
+
+                filename = secure_filename(f.filename)
+                save_path = os.path.join(UPLOAD_FOLDER, filename)
+                f.save(save_path)
+
+                file_url = url_for(
+                    "static", filename=f"uploads/{filename}", _external=True
+                )
+                attach = Attachment(
+                    message_id=message.id, url=file_url, mime_type=f.mimetype
+                )
+                db.session.add(attach)
+                attachments_data.append({"url": file_url, "mime_type": f.mimetype})
+
         db.session.commit()
 
+        # Ответ клиенту
         message_data = {
-            'id': message.id,
-            'sender_id': message.sender_id,
-            'recipient_id': message.recipient_id,
-            'text': message.text,
-            'timestamp': message.timestamp.isoformat(),
-            'is_read': message.is_read
+            "id": message.id,
+            "sender_id": message.sender_id,
+            "recipient_id": message.recipient_id,
+            "text": message.text,
+            "attachments": attachments_data,
+            "timestamp": message.timestamp.isoformat(),
+            "is_read": message.is_read,
         }
-        
-        socketio.emit('new_message', message_data, room=f'user_{recipient_id}')
-        socketio.emit('new_message', message_data, room=f'user_{current_user.id}')
-        
-        return jsonify({'success': True, 'message': message_data})
+
+        socketio.emit("new_message", message_data, room=f"user_{recipient_id}")
+        socketio.emit("new_message", message_data, room=f"user_{current_user.id}")
+        return jsonify({"success": True, "message": message_data})
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error sending message: {str(e)}")
-        return jsonify({'success': False, 'error': 'Internal server error'}), 500
+        print(f"Error sending message: {e}")
+        return jsonify({"success": False, "error": "Internal server error"}), 500
 
-@main_bp.route('/messenger/check_new')
+
+@main_bp.route("/messenger/check_new")
 @login_required
 def check_new_messages():
     count = Message.query.filter(
-        Message.recipient_id == current_user.id,
-        Message.is_read is False
+        Message.recipient_id == current_user.id, Message.is_read is False
     ).count()
-    return jsonify({'count': count})
+    return jsonify({"count": count})
+
 
 @main_bp.before_request
 def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
-@main_bp.route('/messenger/mark_as_read/<int:sender_id>', methods=['POST'])
+
+
+@main_bp.route("/messenger/mark_as_read/<int:sender_id>", methods=["POST"])
 @login_required
 def mark_as_read(sender_id):
     # Помечаем все непрочитанные сообщения от этого пользователя как прочитанные
     Message.query.filter(
         Message.sender_id == sender_id,
         Message.recipient_id == current_user.id,
-        Message.is_read is False
-    ).update({'is_read': True})
+        Message.is_read is False,
+    ).update({"is_read": True})
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({"success": True})
 
-@main_bp.route('/messenger/mark_message_read/<int:message_id>', methods=['POST'])
+
+@main_bp.route("/messenger/mark_message_read/<int:message_id>", methods=["POST"])
 @login_required
 def mark_message_read(message_id):
     message = Message.query.get_or_404(message_id)
     if message.recipient_id != current_user.id:
         abort(403)
-    
+
     message.is_read = True
     db.session.commit()
-    return jsonify({'success': True})
+    return jsonify({"success": True})
 
-@main_bp.route('/api/context-menu', methods=['GET'])
+
+@main_bp.route("/api/context-menu", methods=["GET"])
 def get_context_menu():
-    context_type = request.args.get('type')  # file, folder и т. д.
+    context_type = request.args.get("type")  # file, folder и т. д.
     menu_items = CONTEXT_MENU_ITEMS.get(context_type, [])
     return jsonify({"items": menu_items})
 
-@main_bp.route('/api/execute-action', methods=['POST'])
+
+@main_bp.route("/api/execute-action", methods=["POST"])
 def execute_action():
     try:
         data = request.get_json()
-        action = data.get('action')
-        element_data = data.get('element')
+        action = data.get("action")
+        element_data = data.get("element")
 
         print(f"Received action: {action}, element data: {element_data}")  # Для дебага
 
         if action == "delete":
-            item_id = element_data.get('id')
+            item_id = element_data.get("id")
             item = Message.query.get_or_404(item_id)
             if item.sender_id != current_user.id:
-                return jsonify({"status": "error", "message": "Вы можете удалять только свои сообщения"}), 403
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Вы можете удалять только свои сообщения",
+                    }
+                ), 403
             recipient_id = item.recipient_id
             db.session.delete(item)
             db.session.commit()
-            return jsonify({"status": "success", "message": f"Сообщение {item_id} удалено", "recipient_id": recipient_id})
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": f"Сообщение {item_id} удалено",
+                    "recipient_id": recipient_id,
+                }
+            )
 
         elif action == "edit":
-            item_id = element_data.get('id')
-            new_text = element_data.get('content')
+            item_id = element_data.get("id")
+            new_text = element_data.get("content")
             item = Message.query.get_or_404(item_id)
             if item.sender_id != current_user.id:
-                return jsonify({"status": "error", "message": "Вы можете редактировать только свои сообщения"}), 403
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Вы можете редактировать только свои сообщения",
+                    }
+                ), 403
             if not new_text.strip():
-                return jsonify({"status": "error", "message": "Текст сообщения не может быть пустым"}), 400
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Текст сообщения не может быть пустым",
+                    }
+                ), 400
             item.text = new_text.strip()
             db.session.commit()
-            return jsonify({"status": "success", "message": f"Сообщение {item_id} отредактировано", "recipient_id": item.recipient_id})
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": f"Сообщение {item_id} отредактировано",
+                    "recipient_id": item.recipient_id,
+                }
+            )
 
         elif action == "clear_history":
-            recipient_id = element_data.get('recipient_id')
+            recipient_id = element_data.get("recipient_id")
             Message.query.filter(
                 or_(
-                    and_(Message.sender_id == current_user.id, Message.recipient_id == recipient_id),
-                    and_(Message.sender_id == recipient_id, Message.recipient_id == current_user.id)
+                    and_(
+                        Message.sender_id == current_user.id,
+                        Message.recipient_id == recipient_id,
+                    ),
+                    and_(
+                        Message.sender_id == recipient_id,
+                        Message.recipient_id == current_user.id,
+                    ),
                 )
             ).delete()
             db.session.commit()
-            return jsonify({"status": "success", "message": "История чата очищена", "recipient_id": recipient_id})
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "История чата очищена",
+                    "recipient_id": recipient_id,
+                }
+            )
 
         else:
             return jsonify({"status": "error", "message": "Неизвестное действие"}), 400
@@ -434,7 +596,9 @@ def execute_action():
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 pending_inputs = {}  # Общий словарь для хранения событий ожидания ввода
+
 
 def register_socketio_events(socketio):
     """
@@ -494,18 +658,21 @@ def register_socketio_events(socketio):
                 "console_output", f"\n(Ввод вне запроса: {data})\n", room=sid
             )  # Уведомляем клиента о вводе вне запроса
 
-@socketio.on('join_user_room')
+
+@socketio.on("join_user_room")
 def handle_join_user_room():
     if current_user.is_authenticated:
-        room = f'user_{current_user.id}'
+        room = f"user_{current_user.id}"
         join_room(room)
 
-@socketio.on('connect')
+
+@socketio.on("connect")
 def handle_connect():
     if current_user.is_authenticated:
-        join_room(f'user_{current_user.id}')
+        join_room(f"user_{current_user.id}")
         print(f"User {current_user.id} joined room user_{current_user.id}")
 
-@socketio.on('disconnect')
+
+@socketio.on("disconnect")
 def handle_disconnect():
-    leave_room(f'user_{current_user.id}')
+    leave_room(f"user_{current_user.id}")

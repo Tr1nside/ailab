@@ -17,7 +17,41 @@
     <div class="messages-container" id="messages-container">
         {% for message in messages %}
         <div class="message context-area {% if message.sender_id == current_user.id %}message-sent{% else %}message-received{% endif %}" data-id="{{ message.id }}" data-context-type="message">
+            {% if message.attachments %}
+            <div class="attachments">
+                {% for att in message.attachments %}
+                {% if att.mime_type.startswith('image') %}
+                    <img
+                    src="{{ att.url }}"
+                    alt="image attachment"
+                    class="message-image"
+                    loading="lazy"
+                    >
+                {% elif att.mime_type.startswith('video') %}
+                    <video
+                    controls
+                    class="message-video"
+                    preload="metadata"
+                    >
+                    <source src="{{ att.url }}" type="{{ att.mime_type }}">
+                    Ваш браузер не поддерживает видео.
+                    </video>
+                {% else %}
+                    <a
+                    href="{{ att.url }}"
+                    download
+                    class="message-doc"
+                    >
+                    <span class="doc-icon">📄</span>
+                    {{ att.url.rsplit('/',1)[-1] }}
+                    </a>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if message.text %}
             <div class="message-text context-area" data-id="{{ message.id }}" data-context-type="message">{{ message.text|safe }}</div>
+            {% endif %}
             <div class="message-second-data context-area" data-id="{{ message.id }}" data-context-type="message">
                 <div class="message-time" data-timestamp="{{ message.timestamp.isoformat() }}"></div>
                 {% if message.sender_id == current_user.id %}
@@ -35,7 +69,9 @@
     </div>
 
     <div class="input-container">
+        <input type="file" id="file-input" multiple accept="image/*,video/*,.pdf,.doc,.docx,.js,.html,.py,.cpp" style="width: 10px;">
         <textarea class="chat-input" placeholder="Напишите сообщение..." id="message-input" rows="1"></textarea>
         <button class="send-button"><img src="{{ url_for('static', filename='img/icons/send.svg') }}" alt="sun"></button>
     </div>
+  
 </div>
