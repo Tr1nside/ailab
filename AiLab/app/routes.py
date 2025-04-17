@@ -425,6 +425,7 @@ def send_message():
                     continue
 
                 filename = secure_filename(f.filename)
+                print('\n\n\n\n\n'+ filename)
                 save_path = os.path.join(UPLOAD_FOLDER, filename)
                 f.save(save_path)
 
