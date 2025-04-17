@@ -181,7 +181,45 @@ document.addEventListener('DOMContentLoaded', function () {
 
             contextMenu.style.display = 'none';
             return;
+        } else if (action === "download") {
+            // Получаем элемент, на котором вызвали меню (это точно <img> или <video>)
+            const mediaElement = currentContextElement;
+            
+            // Определяем URL и имя файла
+            let fileUrl;
+            let fileName;
+            
+            if (mediaElement.tagName === 'IMG') {
+                fileUrl = mediaElement.src;
+                fileName = mediaElement.alt || `image_${Date.now()}.jpg`;
+            } 
+            else if (mediaElement.tagName === 'VIDEO') {
+                // Для video берём источник или poster
+                fileUrl = mediaElement.querySelector('source')?.src || 
+                         mediaElement.poster || 
+                         mediaElement.src;
+                fileName = mediaElement.dataset.filename || `video_${Date.now()}.mp4`;
+            }
+        
+            if (!fileUrl) {
+                console.error('URL файла не найден');
+                return;
+            }
+        
+            // Создаём скрытую ссылку для скачивания
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.download = fileName;
+            link.style.display = 'none';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        
+            // Закрываем контекстное меню
+            contextMenu.style.display = 'none';
         }
+        
 
         // Логика для других действий (delete, clear_history)
         const postData = {
@@ -401,6 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const text = input.value.trim();
             const fileInput = document.getElementById('file-input');
             const files = Array.from(fileInput.files);
+            console.log(files)
 
             if (!text && files.length === 0) return;
 
@@ -408,6 +447,7 @@ document.addEventListener('DOMContentLoaded', function () {
             form.append('recipient_id', userId);
             if (text) form.append('text', text);
             files.forEach(f => form.append('files', f));
+            
 
             fetch('/messenger/send', {
                 method: 'POST',

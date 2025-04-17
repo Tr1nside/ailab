@@ -22,17 +22,20 @@
             <div class="attachments">
                 {% for att in message.attachments %}
                     {% if att.mime_type.startswith('image') %}
-                        <img
+                        <img data-enlargeable
                             src="{{ att.url }}"
                             alt="image attachment"
-                            class="message-image"
+                            class="message-image context-area"
                             loading="lazy"
+                            style="z-index: 2000;"
+                            data-context-type="media"
                         >
                     {% elif att.mime_type.startswith('video') %}
                         <video
                             controls
-                            class="message-video"
+                            class="message-video context-area"
                             preload="metadata"
+                            data-context-type="media"
                         >
                             <source src="{{ att.url }}" type="{{ att.mime_type }}">
                             Ваш браузер не поддерживает видео.
