@@ -4,8 +4,8 @@ const nightModeButton = document.querySelector('.night-mode');
 function updateNightModeIcon() {
     const isDark = document.body.classList.contains('dark-mode');
     nightModeButton.innerHTML = isDark 
-        ? '<img src="../static/img/icons/sun.svg" alt="sun">' 
-        : '<img src="../static/img/icons/moon.svg" alt="moon">';
+        ? '<img src="../static/img/icons/sun.svg" alt="sun" class="icon-header">' 
+        : '<img src="../static/img/icons/moon.svg" alt="moon" class="icon-header">';
 }
 
 // Переключение между режимами

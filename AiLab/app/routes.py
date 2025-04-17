@@ -412,7 +412,7 @@ def send_message():
 
         # Обрабатываем вложения
         files = request.files.getlist("files")
-        allowed_ext = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "pdf", "doc", "docx"}
+        allowed_ext = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "pdf", "doc", "docx", "cpp", "py", "html", "js"}
         attachments_data = []
 
         # Обеспечиваем существование папки

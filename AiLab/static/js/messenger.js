@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const contextMenuList = document.getElementById('contextMenuList');
     let currentContextType = null;
     let currentContextElement = null; // Добавляем переменную для хранения элемента
+    
 
 
     // Обработчик правого клика
