@@ -9,4 +9,4 @@ class Config:
         "DATABASE_URL"
     ) or "sqlite:///" + os.path.join(basedir, "app.db")
     UPLOAD_FOLDER = os.path.join(basedir, "app/static/uploads")
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
+    

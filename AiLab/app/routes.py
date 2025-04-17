@@ -38,6 +38,9 @@ CONTEXT_MENU_ITEMS = {
     "message": [
         {"label": "Редактировать", "action": "edit"},
         {"label": "Удалить", "action": "delete"},
+    ],
+    "media": [
+        {"label": "Скачать", "action": "download"}
     ]
 }
 
@@ -412,6 +415,7 @@ def send_message():
 
         # Обрабатываем вложения
         files = request.files.getlist("files")
+        print(files)
         allowed_ext = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "pdf", "doc", "docx", "cpp", "py", "html", "js"}
         attachments_data = []
 
@@ -449,6 +453,9 @@ def send_message():
             "timestamp": message.timestamp.isoformat(),
             "is_read": message.is_read,
         }
+        print('\n')
+        print(message_data)
+        print('\n')
 
         socketio.emit("new_message", message_data, room=f"user_{recipient_id}")
         socketio.emit("new_message", message_data, room=f"user_{current_user.id}")
@@ -588,7 +595,9 @@ def execute_action():
                     "recipient_id": recipient_id,
                 }
             )
-
+        elif action == "download":
+            return jsonify({"status": "success", "message": "Скаченно медиа"}
+            )
         else:
             return jsonify({"status": "error", "message": "Неизвестное действие"}), 400
 
