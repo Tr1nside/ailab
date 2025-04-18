@@ -426,6 +426,7 @@ max-width: 250px;
 overflow: hidden;
 text-overflow: ellipsis;
 white-space: nowrap;
+cursor: pointer;
 }
 
 .message-doc .doc-icon {
@@ -441,5 +442,3 @@ padding: 4px;
 #file-input {
     width: 10px;
 }
-  
-

@@ -40,13 +40,13 @@
                                 Ваш браузер не поддерживает видео.
                             </video>
                         {% else %}
-                            <a
+                            <span
                                 href="{{ att.url }}"
-                                download
-                                class="message-doc">
+                                class="message-doc context-area"
+                                data-context-type="media">
                                 <span class="doc-icon">📄</span>
                                 {{ att.url.rsplit('/',1)[-1] }}
-                            </a>
+                            </span>
                         {% endif %}
                     {% else %}
                         <!-- Пропускаем несуществующие файлы -->

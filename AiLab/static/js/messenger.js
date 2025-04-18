@@ -1,3 +1,8 @@
+function isIdePage() {
+    return window.location.pathname.startsWith('/ide');
+}
+
+
 const header = document.querySelector('.header');
 if (header) {
     document.documentElement.style.setProperty(
@@ -63,6 +68,44 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentContextType = null;
     let currentContextElement = null; // Добавляем переменную для хранения элемента
 
+    function attachAttachmentListeners() {
+        const docElements = document.querySelectorAll('.message-doc.context-area');
+        docElements.forEach(doc => {
+            doc.addEventListener('click', function (e) {
+                e.preventDefault();
+                const fileUrl = doc.getAttribute('href');
+                const fileName = doc.textContent.trim();
+                const extension = fileName.split('.').pop().toLowerCase();
+                const codeExtensions = ['py', 'cpp', 'js', 'html'];
+
+                // Проверяем, является ли файл кодовым и находится ли пользователь на /ide
+                if (codeExtensions.includes(extension) && isIdePage()) {
+                    // Загружаем содержимое файла через fetch
+                    fetch(fileUrl)
+                        .then(response => {
+                            if (!response.ok) throw new Error('Не удалось загрузить файл');
+                            return response.text(); // Получаем содержимое как текст
+                        })
+                        .then(content => {
+                            // Вызываем функцию создания новой вкладки
+                            window.createNewTabWithContent(fileName, content);
+                        })
+                        .catch(error => {
+                            console.error('Ошибка загрузки файла:', error);
+                            alert('Не удалось открыть файл в редакторе');
+                        });
+                } else {
+                    // Для некодовых файлов или если не на /ide — стандартное скачивание
+                    const link = document.createElement('a');
+                    link.href = fileUrl;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            });
+        });
+    }
 
     // Обработчик правого клика
     document.addEventListener('contextmenu', (e) => {
@@ -198,6 +241,9 @@ document.addEventListener('DOMContentLoaded', function () {
                          mediaElement.poster || 
                          mediaElement.src;
                 fileName = mediaElement.dataset.filename || `video_${Date.now()}.mp4`;
+            } else {    
+                fileUrl = mediaElement.href;
+                fileName = mediaElement.alt || `image_${Date.now()}.jpg`;
             }
         
             if (!fileUrl) {
@@ -240,7 +286,6 @@ document.addEventListener('DOMContentLoaded', function () {
         })
             .then(response => response.json())
             .then(data => {
-                console.log("Server response:", data);
                 if (data.status === "success") {
                     if (action === "delete") {
                         currentContextElement.closest('.message').remove();
@@ -364,7 +409,6 @@ document.addEventListener('DOMContentLoaded', function () {
         fetch(`/messenger/chat/${userId}`)
             .then(response => response.text())
             .then(html => {
-                console.log('Loaded chat HTML:', html); // Логируем HTML для отладки
                 document.getElementById('messenger-content').innerHTML = html;
                 formatMessageTimes(); // Форматирование времени
                 scrollToBottom();
@@ -374,6 +418,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers: { 'X-CSRFToken': getCookie('csrf_token') }
                 }).then(() => checkNewMessages());
                 attachChatListeners(userId);
+                attachAttachmentListeners();
             })
             .catch(error => {
                 console.error('Ошибка загрузки чата:', error);
@@ -409,7 +454,6 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(response => response.json())
                 .then(data => {
-                    console.log("Server response:", data);
                     if (data.status === "success") {
                         loadChat(userId)
                     } else {
@@ -452,16 +496,8 @@ document.addEventListener('DOMContentLoaded', function () {
             form.append('recipient_id', userId);
             if (text) form.append('text', text);
         
-            // Логируем файлы перед добавлением
-            console.log('Files to send:', files.map(f => f.name));
-        
             // Добавляем только текущие файлы
             files.forEach(f => form.append('files', f));
-        
-            // Логируем содержимое FormData (для отладки)
-            for (let [key, value] of form.entries()) {
-                console.log(`FormData entry: ${key} = ${value.name || value}`);
-            }
         
             fetch('/messenger/send', {
                 method: 'POST',
@@ -470,7 +506,6 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(res => res.json())
                 .then(data => {
-                    console.log('Server response:', data); // Логируем ответ сервера
                     if (data.success) {
                         input.value = ''; // Очищаем текстовое поле
                         // Полностью сбрасываем input type="file"

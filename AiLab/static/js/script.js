@@ -187,6 +187,11 @@ function createNewTab(customId = null, fileName = null, content = "", activate =
     saveTabsToLocalStorage();
 }
 
+window.createNewTabWithContent = function(fileName, content) {
+    const newTabId = getNextTabId();
+    createNewTab(newTabId, fileName, content, true);
+};
+
 // Функция для активации вкладки
 function activateTab(tab) {
     const tabId = tab.dataset.tab;
