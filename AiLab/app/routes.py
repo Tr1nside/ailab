@@ -39,9 +39,7 @@ CONTEXT_MENU_ITEMS = {
         {"label": "Редактировать", "action": "edit"},
         {"label": "Удалить", "action": "delete"},
     ],
-    "media": [
-        {"label": "Скачать", "action": "download"}
-    ]
+    "media": [{"label": "Скачать", "action": "download"}],
 }
 
 
@@ -415,11 +413,23 @@ def send_message():
 
         # Обрабатываем вложения
         files = request.files.getlist("files")
-        print(files)
-        allowed_ext = {"png", "jpg", "jpeg", "gif", "mp4", "mov", "pdf", "doc", "docx", "cpp", "py", "html", "js"}
+        allowed_ext = {
+            "png",
+            "jpg",
+            "jpeg",
+            "gif",
+            "mp4",
+            "mov",
+            "pdf",
+            "doc",
+            "docx",
+            "cpp",
+            "py",
+            "html",
+            "js",
+        }
         attachments_data = []
 
-        # Обеспечиваем существование папки
         os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
         for f in files:
@@ -427,12 +437,9 @@ def send_message():
                 ext = f.filename.rsplit(".", 1)[-1].lower()
                 if ext not in allowed_ext:
                     continue
-
-                filename = secure_filename(f.filename)
-                print('\n\n\n\n\n'+ filename)
+                filename = secure_filename(f"{message.id}_{f.filename}")
                 save_path = os.path.join(UPLOAD_FOLDER, filename)
                 f.save(save_path)
-
                 file_url = url_for(
                     "static", filename=f"uploads/{filename}", _external=True
                 )
@@ -454,9 +461,6 @@ def send_message():
             "timestamp": message.timestamp.isoformat(),
             "is_read": message.is_read,
         }
-        print('\n')
-        print(message_data)
-        print('\n')
 
         socketio.emit("new_message", message_data, room=f"user_{recipient_id}")
         socketio.emit("new_message", message_data, room=f"user_{current_user.id}")
@@ -464,7 +468,6 @@ def send_message():
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error sending message: {e}")
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
 
@@ -523,8 +526,6 @@ def execute_action():
         action = data.get("action")
         element_data = data.get("element")
 
-        print(f"Received action: {action}, element data: {element_data}")  # Для дебага
-
         if action == "delete":
             item_id = element_data.get("id")
             item = Message.query.get_or_404(item_id)
@@ -576,7 +577,7 @@ def execute_action():
 
         elif action == "clear_history":
             recipient_id = element_data.get("recipient_id")
-            Message.query.filter(
+            messages = Message.query.filter(
                 or_(
                     and_(
                         Message.sender_id == current_user.id,
@@ -587,7 +588,13 @@ def execute_action():
                         Message.recipient_id == current_user.id,
                     ),
                 )
-            ).delete()
+            ).all()
+
+            for msg in messages:
+                for attachment in msg.attachments:
+                    db.session.delete(attachment)
+                db.session.delete(msg)
+
             db.session.commit()
             return jsonify(
                 {
@@ -597,14 +604,25 @@ def execute_action():
                 }
             )
         elif action == "download":
-            return jsonify({"status": "success", "message": "Скаченно медиа"}
-            )
+            return jsonify({"status": "success", "message": "Скаченно медиа"})
         else:
             return jsonify({"status": "error", "message": "Неизвестное действие"}), 400
 
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+def file_exists(filename):
+    """Проверяет, существует ли файл в папке uploads."""
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+    return os.path.exists(file_path)
+
+
+# Регистрируем функцию как фильтр для Jinja2
+@main_bp.app_template_filter("file_exists")
+def file_exists_filter(filename):
+    return file_exists(filename)
 
 
 pending_inputs = {}  # Общий словарь для хранения событий ожидания ввода
@@ -680,7 +698,6 @@ def handle_join_user_room():
 def handle_connect():
     if current_user.is_authenticated:
         join_room(f"user_{current_user.id}")
-        print(f"User {current_user.id} joined room user_{current_user.id}")
 
 
 @socketio.on("disconnect")

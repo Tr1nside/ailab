@@ -62,7 +62,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const contextMenuList = document.getElementById('contextMenuList');
     let currentContextType = null;
     let currentContextElement = null; // Добавляем переменную для хранения элемента
-    
 
 
     // Обработчик правого клика
@@ -358,20 +357,27 @@ document.addEventListener('DOMContentLoaded', function () {
     // Загрузка чата с пользователем
     function loadChat(userId) {
         document.getElementById('messenger-header').classList.add('hidden');
+        const messagesContainer = document.getElementById('messages-container');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = ''; // Очищаем контейнер перед загрузкой
+        }
         fetch(`/messenger/chat/${userId}`)
             .then(response => response.text())
             .then(html => {
+                console.log('Loaded chat HTML:', html); // Логируем HTML для отладки
                 document.getElementById('messenger-content').innerHTML = html;
                 formatMessageTimes(); // Форматирование времени
                 scrollToBottom();
-
                 // Пометить сообщения как прочитанные
                 fetch(`/messenger/mark_as_read/${userId}`, {
                     method: 'POST',
                     headers: { 'X-CSRFToken': getCookie('csrf_token') }
                 }).then(() => checkNewMessages());
-
                 attachChatListeners(userId);
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки чата:', error);
+                alert('Не удалось загрузить чат');
             });
     }
 
@@ -438,17 +444,25 @@ document.addEventListener('DOMContentLoaded', function () {
         function sendMessage() {
             const text = input.value.trim();
             const fileInput = document.getElementById('file-input');
-            const files = Array.from(fileInput.files);
-            console.log(files)
-
+            const files = Array.from(fileInput.files); // Получаем текущие файлы
+        
             if (!text && files.length === 0) return;
-
+        
             const form = new FormData();
             form.append('recipient_id', userId);
             if (text) form.append('text', text);
+        
+            // Логируем файлы перед добавлением
+            console.log('Files to send:', files.map(f => f.name));
+        
+            // Добавляем только текущие файлы
             files.forEach(f => form.append('files', f));
-            
-
+        
+            // Логируем содержимое FormData (для отладки)
+            for (let [key, value] of form.entries()) {
+                console.log(`FormData entry: ${key} = ${value.name || value}`);
+            }
+        
             fetch('/messenger/send', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': getCookie('csrf_token') },
@@ -456,13 +470,26 @@ document.addEventListener('DOMContentLoaded', function () {
             })
                 .then(res => res.json())
                 .then(data => {
+                    console.log('Server response:', data); // Логируем ответ сервера
                     if (data.success) {
-                        input.value = '';
-                        fileInput.value = '';
-                        loadChat(userId);
+                        input.value = ''; // Очищаем текстовое поле
+                        // Полностью сбрасываем input type="file"
+                        fileInput.value = ''; // Сбрасываем значение
+                        // Пересоздаем input для полной очистки
+                        const newFileInput = document.createElement('input');
+                        newFileInput.type = 'file';
+                        newFileInput.id = 'file-input';
+                        newFileInput.multiple = true;
+                        newFileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.js,.html,.py,.cpp';
+                        fileInput.parentNode.replaceChild(newFileInput, fileInput);
+                        loadChat(userId); // Перезагружаем чат
                     } else {
                         alert(data.error || 'Ошибка отправки');
                     }
+                })
+                .catch(error => {
+                    console.error('Ошибка отправки сообщения:', error);
+                    alert('Не удалось отправить сообщение');
                 });
         }
 
@@ -512,23 +539,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
         socketio.on('new_message', function (data) {
             formatMessageTimes();
-            // Быстрое обновление счетчика
             const badge = document.getElementById('unread-count');
-            if (badge && data.sender_id != current_user_id) { // Не увеличиваем счётчик для своих сообщений
+            if (badge && data.sender_id != current_user_id) {
                 const currentCount = parseInt(badge.textContent) || 0;
                 badge.textContent = currentCount + 1;
                 badge.classList.remove('hidden');
             }
-
             playNotificationSound();
-
-            // Обновляем чат, если он открыт
             const currentChat = document.querySelector('.chat-header');
-            if (currentChat && currentChat.dataset.userId == data.sender_id) {
-                loadChat(data.sender_id);
-            } else if (currentChat && currentChat.dataset.userId == data.recipient_id && data.sender_id == current_user_id) {
-                // Если это наше сообщение в открытом чате, обновляем его
-                loadChat(data.recipient_id);
+            if (currentChat) {
+                const currentChatUserId = parseInt(currentChat.dataset.userId);
+                if (
+                    currentChatUserId === data.sender_id ||
+                    (currentChatUserId === data.recipient_id && data.sender_id === current_user_id)
+                ) {
+                    console.log('Updating chat for user:', currentChatUserId);
+                    loadChat(currentChatUserId); // Обновляем только активный чат
+                }
             }
         });
 

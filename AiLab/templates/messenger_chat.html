@@ -21,34 +21,36 @@
             {% if message.attachments %}
             <div class="attachments">
                 {% for att in message.attachments %}
-                    {% if att.mime_type.startswith('image') %}
-                        <img data-enlargeable
-                            src="{{ att.url }}"
-                            alt="image attachment"
-                            class="message-image context-area"
-                            loading="lazy"
-                            style="z-index: 2000;"
-                            data-context-type="media"
-                        >
-                    {% elif att.mime_type.startswith('video') %}
-                        <video
-                            controls
-                            class="message-video context-area"
-                            preload="metadata"
-                            data-context-type="media"
-                        >
-                            <source src="{{ att.url }}" type="{{ att.mime_type }}">
-                            Ваш браузер не поддерживает видео.
-                        </video>
+                    {% if att.url.rsplit('/',1)[-1] | file_exists %}
+                        {% if att.mime_type.startswith('image') %}
+                            <img data-enlargeable
+                                src="{{ att.url }}"
+                                alt="image attachment"
+                                class="message-image context-area"
+                                loading="lazy"
+                                style="z-index: 2000;"
+                                data-context-type="media">
+                        {% elif att.mime_type.startswith('video') %}
+                            <video
+                                controls
+                                class="message-video context-area"
+                                preload="metadata"
+                                data-context-type="media">
+                                <source src="{{ att.url }}" type="{{ att.mime_type }}">
+                                Ваш браузер не поддерживает видео.
+                            </video>
+                        {% else %}
+                            <a
+                                href="{{ att.url }}"
+                                download
+                                class="message-doc">
+                                <span class="doc-icon">📄</span>
+                                {{ att.url.rsplit('/',1)[-1] }}
+                            </a>
+                        {% endif %}
                     {% else %}
-                        <a
-                            href="{{ att.url }}"
-                            download
-                            class="message-doc"
-                        >
-                            <span class="doc-icon">📄</span>
-                            {{ att.url.rsplit('/',1)[-1] }}
-                        </a>
+                        <!-- Пропускаем несуществующие файлы -->
+                        <div class="attachment-missing">Файл {{ att.url.rsplit('/',1)[-1] }} не найден</div>
                     {% endif %}
                 {% endfor %}
             </div>

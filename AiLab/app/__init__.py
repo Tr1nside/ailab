@@ -28,8 +28,8 @@ def create_app():
     login.login_view = "main_bp.login"  # Указываем правильный endpoint
     login.init_app(app)
     # В конфигурации Flask перед созданием app
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Отключаем кеширование для статики
-    app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB лимит
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0  # Отключаем кеширование для статики
+    app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB лимит
 
     migrate = Migrate(app, db)
 
@@ -41,4 +41,3 @@ def create_app():
     )  # Регистрируем события для SocketIO (обработчики on('execute'), on('console_input'), и т.д.)
 
     return app
-
