@@ -414,7 +414,8 @@ def send_message():
         # Обрабатываем вложения
         files = request.files.getlist("files")
         allowed_ext = {
-            "png", 
+            "png",
+            "jpg", 
             "jpeg",
             "gif",
             "mp4",
