@@ -7,6 +7,7 @@ from flask import (
     url_for,
     jsonify,
     abort,
+    send_file,
 )  # Импортируем необходимые модули из Flask
 import eventlet  # Импортируем eventlet для работы с асинхронными событиями
 import builtins  # Импортируем встроенные функции Python
@@ -27,12 +28,15 @@ from werkzeug.utils import secure_filename
 from .funcs import generate_qr_code
 from datetime import datetime
 from .extensions import socketio
-from flask_socketio import join_room, leave_room, emit
+from flask_socketio import join_room, leave_room
+import shutil
+from pathlib import Path
 
 
 main_bp = Blueprint("main_bp", __name__)  # Создаём Blueprint для организации маршрутов
 appdir = os.path.abspath(os.path.dirname(__file__))
 UPLOAD_FOLDER = os.path.join(appdir, "../static/uploads")
+USER_FILES_PATH = os.path.join(appdir, "../user_files")
 
 CONTEXT_MENU_ITEMS = {
     "message": [
@@ -168,6 +172,14 @@ def register():
         db.session.add(user)
         db.session.commit()
         qr_filename = generate_qr_code(user.id, user.email, True)
+        
+        filename = secure_filename("main.py")
+        save_path = os.path.join(USER_FILES_PATH, f"/{current_user.id}" + filename)
+
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        with open(save_path, 'w') as f:
+            f.write("# Your content here\n")  # Пример записи в файлё
+            f.close
 
         flash("Congratulations, you are now a registered user!")
         return redirect(url_for("main_bp.login"))
@@ -624,6 +636,145 @@ def file_exists(filename):
 def file_exists_filter(filename):
     return file_exists(filename)
 
+@main_bp.route("/api/filetree", methods=["GET"])
+@login_required
+def get_filetree():
+    user_folder = os.path.join(USER_FILES_PATH, str(current_user.id))
+    os.makedirs(user_folder, exist_ok=True)
+
+    def scan_directory(path):
+        result = []
+        for entry in os.scandir(path):
+            stats = entry.stat()
+            item = {
+                "name": entry.name,
+                "path": os.path.relpath(entry.path, user_folder).replace(os.sep, "/"),
+                "type": "folder" if entry.is_dir() else "file",
+                "size": stats.st_size,
+                "modified": datetime.fromtimestamp(stats.st_mtime).isoformat(),
+            }
+            if entry.is_dir():
+                item["children"] = scan_directory(entry.path)
+            result.append(item)
+        return result
+
+    try:
+        filetree = scan_directory(user_folder)
+        return jsonify({"success": True, "filetree": filetree})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@main_bp.route("/api/file-action", methods=["POST"])
+@login_required
+def file_action():
+    try:
+        data = request.get_json()
+        action = data.get("action")
+        element = data.get("element", {})
+        user_folder = os.path.join(USER_FILES_PATH, str(current_user.id))
+        base_path = Path(user_folder).resolve()
+
+        if action == "create_file":
+            file_path = (base_path / element.get("path", "new_file.py")).resolve()
+            if str(file_path).startswith(str(base_path)):
+                if file_path.exists():
+                    return jsonify({"status": "error", "message": "Файл уже существует"}), 400
+                file_path.parent.mkdir(parents=True, exist_ok=True)
+                file_path.touch()
+                return jsonify({"status": "success", "message": "Файл создан"})
+
+        elif action == "create_folder":
+            folder_path = (base_path / element.get("path", "new_folder")).resolve()
+            if str(folder_path).startswith(str(base_path)):
+                if folder_path.exists():
+                    return jsonify({"status": "error", "message": "Папка уже существует"}), 400
+                folder_path.mkdir(parents=True, exist_ok=True)
+                return jsonify({"status": "success", "message": "Папка создана"})
+
+        elif action == "rename":
+            old_path = (base_path / element.get("old_path")).resolve()
+            new_path = (base_path / element.get("new_path")).resolve()
+            if not str(old_path).startswith(str(base_path)) or not str(new_path).startswith(str(base_path)):
+                return jsonify({"status": "error", "message": "Недопустимый путь"}), 403
+            if not old_path.exists():
+                return jsonify({"status": "error", "message": "Элемент не найден"}), 404
+            if new_path.exists():
+                return jsonify({"status": "error", "message": "Элемент с таким именем уже существует"}), 400
+            old_path.rename(new_path)
+            return jsonify({"status": "success", "message": "Элемент переименован"})
+
+        elif action == "delete":
+            path = (base_path / element.get("path")).resolve()
+            if not str(path).startswith(str(base_path)):
+                return jsonify({"status": "error", "message": "Недопустимый путь"}), 403
+            if not path.exists():
+                return jsonify({"status": "error", "message": "Элемент не найден"}), 404
+            if path.is_dir():
+                shutil.rmtree(path)
+            else:
+                path.unlink()
+            return jsonify({"status": "success", "message": "Элемент удален"})
+
+        elif action == "move":
+            src_path = (base_path / element.get("src_path")).resolve()
+            dest_path = (base_path / element.get("dest_path")).resolve()
+            if not str(src_path).startswith(str(base_path)) or not str(dest_path).startswith(str(base_path)):
+                return jsonify({"status": "error", "message": "Недопустимый путь"}), 403
+            if not src_path.exists():
+                return jsonify({"status": "error", "message": "Исходный элемент не найден"}), 404
+            if dest_path.exists():
+                return jsonify({"status": "error", "message": "Целевой элемент уже существует"}), 400
+            shutil.move(str(src_path), str(dest_path))
+            return jsonify({"status": "success", "message": "Элемент перемещен"})
+
+        elif action == "copy":
+            src_path = (base_path / element.get("src_path")).resolve()
+            dest_path = (base_path / element.get("dest_path")).resolve()
+            if not str(src_path).startswith(str(base_path)) or not str(dest_path).startswith(str(base_path)):
+                return jsonify({"status": "error", "message": "Недопустимый путь"}), 403
+            if not src_path.exists():
+                return jsonify({"status": "error", "message": "Исходный элемент не найден"}), 404
+            if dest_path.exists():
+                return jsonify({"status": "error", "message": "Целевой элемент уже существует"}), 400
+            if src_path.is_dir():
+                shutil.copytree(src_path, dest_path)
+            else:
+                shutil.copy2(src_path, dest_path)
+            return jsonify({"status": "success", "message": "Элемент скопирован"})
+
+        elif action == "read_file":
+            file_path = (base_path / element.get("path")).resolve()
+            if not str(file_path).startswith(str(base_path)):
+                return jsonify({"status": "error", "message": "Недопустимый путь"}), 403
+            if not file_path.exists() or file_path.is_dir():
+                return jsonify({"status": "error", "message": "Файл не найден или это папка"}), 404
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            return jsonify({"status": "success", "message": "Файл прочитан", "content": content})
+
+        elif action == "write_file":
+            file_path = (base_path / element.get("path")).resolve()
+            content = element.get("content", "")
+            if not str(file_path).startswith(str(base_path)):
+                return jsonify({"status": "error", "message": "Недопустимый путь"}), 403
+            if not file_path.exists() or file_path.is_dir():
+                return jsonify({"status": "error", "message": "Файл не найден или это папка"}), 404
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            return jsonify({"status": "success", "message": "Файл обновлён"})
+
+        elif action == "download_file":
+            file_path = (base_path / element.get("path")).resolve()
+            if not str(file_path).startswith(str(base_path)):
+                return jsonify({"status": "error", "message": "Недопустимый путь"}), 403
+            if not file_path.exists() or file_path.is_dir():
+                return jsonify({"status": "error", "message": "Файл не найден или это папка"}), 404
+            return send_file(file_path, as_attachment=True)
+
+        return jsonify({"status": "error", "message": "Неизвестное действие"}), 400
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 pending_inputs = {}  # Общий словарь для хранения событий ожидания ввода
 

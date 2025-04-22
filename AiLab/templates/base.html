@@ -8,6 +8,7 @@
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/messenger.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/filetree.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
@@ -40,6 +41,10 @@
             {% endif %}
         </div>
         
+        <div class="filetree-icon">
+            <img src="{{ url_for('static', filename='img/icons/mess.svg') }}" alt="filetree" class="icon-header">
+        </div>
+
         <div class="messenger-icon">
             <span class="badge hidden" id="unread-count">0</span>
             <img src="{{ url_for('static', filename='img/icons/mess.svg') }}" alt="messanger" class="icon-header">
@@ -48,21 +53,29 @@
         <div class="night-mode"><img src="{{ url_for('static', filename='img/icons/sun.svg') }}" alt="sun" class="icon-header"></div>
     </div>
 
+    <div class="filetree-container" id="filetree-container" data-user-id="{{ current_user.id | default(0, true) }}" data-context-type="root">
+        <div class="filetree-content" id="filetree-content"></div>
+    </div>
+
+
     {% block content %}
     {% endblock %}
 
-        <div class="messenger-container" id="messenger-container" data-user-id="{{ current_user.id | default(0, true) }}">
-            <div class="messenger-header" id="messenger-header">
-                <div class="search-container">
-                    <input type="text" id="contact-search" placeholder="Поиск контактов..." class="search-input">
-                    <button id="close-messenger" class="close-button">×</button>
-                </div>
+    <div class="messenger-container" id="messenger-container" data-user-id="{{ current_user.id | default(0, true) }}">
+        <div class="messenger-header" id="messenger-header">
+            <div class="search-container">
+                <input type="text" id="contact-search" placeholder="Поиск контактов..." class="search-input">
+                <button id="close-messenger" class="close-button">×</button>
             </div>
-            <div class="messenger-content" id="messenger-content"></div>
         </div>
-        <div id="contextMenu" class="context-menu">
-            <ul id="contextMenuList"></ul>
-        </div>
+        <div class="messenger-content" id="messenger-content"></div>
+    </div>
+    <div id="contextMenu" class="context-menu">
+        <ul id="contextMenuList"></ul>
+    </div>
+    <div id="filetreeContextMenu" class="context-menu">
+        <ul id="filetreeContextMenuList"></ul>
+    </div>
     
     
     <script>
@@ -79,6 +92,7 @@
     </script>
     <script src="{{ url_for('static', filename='js/base.js') }}"></script>
     <script src="{{ url_for('static', filename='js/messenger.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/filetree.js') }}"></script>
     
     {% block scripts %}
     {% endblock %}
