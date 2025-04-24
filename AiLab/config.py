@@ -10,3 +10,4 @@ class Config:
     ) or "sqlite:///" + os.path.join(basedir, "app.db")
     UPLOAD_FOLDER = os.path.join(basedir, "app/static/uploads")
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB
+    SEND_FILE_MAX_AGE_DEFAULT = 0

@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}Profile{% endblock %}
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+{% endblock %}
+
+{% block content %}
+    <div class="profile-container" id="profile-container">
+        <div class="profile-card">
+          <div class="profile-content">
+            <div class="profile-photo-container">
+              <div class="profile-media-wrapper" id="profile-media-wrapper">
+                <!-- Default image will be shown here -->
+                <img
+                  src="{{ url_for('static', filename='uploads/' + profile.profile_photo) }}"
+                  alt="User profile media"
+                  class="profile-photo"
+                  id="profile-image"
+                />
+              </div>
+              {% if id == current_user.id %}
+              <div class="edit-button-container">
+                <button
+                  class="edit-button"
+                  aria-label="Редактировать профиль"
+                  id="edit-profile-btn"
+                >
+                  Редактировать
+                </button>
+              </div>
+              {% endif %}
+            </div>
+            <div class="profile-info">
+              <h1 class="profile-name">{{ profile.full_name }}</h1>
+              <p class="profile-email">{{ profile.email }}</p>
+              <p class="profile-phone">{{ profile.phone }}</p>
+              <p class="profile-position" id="user-position">{{ profile.position }}</p>
+              <div class="social-links">
+                {% if profile.telegram_link %}
+                <div class="social-link" id="telegram-container">
+                  <a href="https://t.me/{{ profile.telegram_link.split('/')[-1] }}" 
+                       target="_blank" 
+                       class="social-id" 
+                       id="telegram-id">
+                    <span class="social-label">Telegram:</span>
+                      {{ profile.telegram_link.split('/')[-1] }}
+                  </a>
+                </div>
+                {% endif %}
+              
+                {% if profile.github_link %}
+                <div class="social-link" id="github-container">
+                  <a href="{{ profile.github_link }}" 
+                       target="_blank" 
+                       class="social-id" 
+                       id="github-id">
+                    <span class="social-label">Github:</span>
+                    
+                      {{ profile.github_link.split('/')[-1] }}
+                    
+                  </a>
+                </div>
+                {% endif %}
+              
+                {% if profile.vk_link %}
+                <div class="social-link" id="vk-container">
+                  <a href="{{ profile.vk_link }}" 
+                       target="_blank" 
+                       class="social-id" 
+                       id="vk-id">
+                    <span class="social-label">Vk:</span>
+                    
+                      {{ profile.vk_link.split('/')[-1] }}
+                    
+                  </a>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            <div class="qr-code-container">
+              {% if profile.qr_photo %}
+              <img src="{{ url_for('static', filename='qrcodes/' + profile.qr_photo) }}" 
+                  alt="QR Code" 
+                  class="qr-code">
+              {% else %}
+              <p>QR-код не сгенерирован</p>
+              {% endif %}
+              <div class="action-buttons">
+                {% if id == current_user.id %}
+                <a href="{{ url_for('friendship_blueprint.friend_requests') }}"><button class="action-button" id="friends-list-btn">Список друзей</button></a>
+                {% endif %}
+                {% if id != current_user.id %}
+                    {% set friendship_status = current_user.get_friendship_status(current_user.id, id) %}  <!-- Нужно добавить метод в модель User -->
+                    {% if friendship_status == 'accepted' %}
+                        <button class="action-button" disabled>Уже друзья</button>
+                    {% elif friendship_status == 'U_F' %}
+                      <button class="action-button" disabled>Заявка отправлена</button>
+                    {% elif friendship_status == 'F_U' %}
+                    <button class="action-button" disabled>Вам отправлена заявка</button>
+                    {% else %}
+                      <form action="{{ url_for('friendship_blueprint.add_friend') }}" method="POST">
+                        <input type="hidden" name="friend_id" value="{{ id }}">
+                        <button type="submit" class="action-button">Добавить в друзья</button>
+                      </form>
+                    {% endif %}
+                {% endif %}
+                {% if id == current_user.id %}
+                <button class="action-button" id="download-profile">Скачать визитку</button>
+                {% endif %}
+                
+              </div>
+            </div>
+          </div>
+        </div>
+      
+        <div id="edit-modal" class="modal-overlay hidden">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            class="modal-content"
+          >
+            <h2 id="modal-title" class="modal-title">Редактирование профиля</h2>
+            <form id="profile-form" method="POST" enctype="multipart/form-data">
+              {{ form.hidden_tag() }}
+              <div class="form-fields">
+                  <div class="photo-upload-controls">
+                    {{ form.profile_media.label(for="photo-upload") }}
+                    {{ form.profile_media(
+                      id="photo-upload",
+                      class="photo-upload-input",
+                      accept="image/*,video/*,.gif"
+                    ) }}
+                    {% if form.profile_media.errors %}
+                      <div class="error">{{ form.profile_media.errors[0] }}</div>
+                    {% endif %}
+                    <p class="photo-upload-help">
+                      Поддерживаются изображения, GIF и видео
+                    </p>
+                  </div>
+                </div>
+                
+                <!-- Full Name -->
+                <label class="form-label">
+                  <span>{{ form.full_name.label.text }}</span>
+                  {{ form.full_name(
+                    class="form-input",
+                    id="input-name",
+                    value=profile.full_name
+                  ) }}
+                  {% if form.full_name.errors %}
+                    <div class="error">{{ form.full_name.errors[0] }}</div>
+                  {% endif %}
+                </label>
+        
+                <!-- Email -->
+                <label class="form-label">
+                  <span>{{ form.email.label.text }}</span>
+                  {{ form.email(
+                    class="form-input",
+                    id="input-email",
+                    value=profile.email
+                  ) }}
+                  {% if form.email.errors %}
+                    <div class="error">{{ form.email.errors[0] }}</div>
+                  {% endif %}
+                </label>
+        
+                <!-- Phone -->
+                <label class="form-label">
+                  <span>{{ form.phone.label.text }}</span>
+                  {{ form.phone(
+                    class="form-input",
+                    id="input-phone",
+                    type="tel",
+                    value=profile.phone,
+                    maxlength="16"
+                  ) }}
+                  {% if form.phone.errors %}
+                    <div class="error">{{ form.phone.errors[0] }}</div>
+                  {% endif %}
+                </label>
+        
+                <!-- Position -->
+                <label class="form-label">
+                  <span>{{ form.position.label.text }}</span>
+                  {{ form.position(
+                    class="form-input",
+                    id="input-position",
+                    value=profile.position
+                  ) }}
+                  {% if form.position.errors %}
+                    <div class="error">{{ form.position.errors[0] }}</div>
+                  {% endif %}
+                </label>
+        
+                <!-- Telegram -->
+                <label class="form-label">
+                  <span>{{ form.telegram_link.label.text }}</span>
+                  {{ form.telegram_link(
+                    class="form-input",
+                    id="input-telegram",
+                    placeholder="https://t.me/username",
+                    value=profile.telegram_link or ""
+                  ) }}
+                  {% if form.telegram_link.errors %}
+                    <div class="error">{{ form.telegram_link.errors[0] }}</div>
+                  {% endif %}
+                </label>
+        
+                <!-- GitHub -->
+                <label class="form-label">
+                  <span>{{ form.github_link.label.text }}</span>
+                  {{ form.github_link(
+                    class="form-input",
+                    id="input-github",
+                    placeholder="https://github.com/username",
+                    value=profile.github_link or ""
+                  ) }}
+                  {% if form.github_link.errors %}
+                    <div class="error">{{ form.github_link.errors[0] }}</div>
+                  {% endif %}
+                </label>
+        
+                <!-- VK -->
+                <label class="form-label">
+                  <span>{{ form.vk_link.label.text }}</span>
+                  {{ form.vk_link(
+                    class="form-input",
+                    id="input-vk",
+                    placeholder="https://vk.com/username",
+                    value=profile.vk_link or ""
+                  ) }}
+                  {% if form.vk_link.errors %}
+                    <div class="error">{{ form.vk_link.errors[0] }}</div>
+                  {% endif %}
+                </label>
+        
+                <div class="form-buttons">
+                  {{ form.submit(class="button") }}
+                  <button class="button" type="button" id="cancel-button">
+                    Отмена
+                  </button>
+                  <a href="{{ url_for('auth_blueprint.logout') }}">
+                    <button class="button" type="button" id="logout-button">
+                      Logout
+                    </button>
+                  </a>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div id="friends-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Список друзей</h2>
+            <div id="friends-list"></div>
+            <button id="close-friends-modal">Закрыть</button>
+        </div>
+    </div>
+    {% endblock %}
+
+    {% block scripts %}
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+    {% endblock %}
+    

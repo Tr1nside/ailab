@@ -1,20 +1,17 @@
-from app import create_app
-from app.extensions import socketio, db
-from app.models import User
-import sqlalchemy as sa
-import sqlalchemy.orm as so
+import eventlet
 
-app = create_app()
+eventlet.monkey_patch()  # Патчим библиотеки для работы с eventlet
 
-# Создание таблиц при запуске
-with app.app_context():
-    db.create_all()
+from flask_migrate import Migrate
+from config import Config
+from app import create_app, db, socketio
 
-
-@app.shell_context_processor
-def make_shell_context():
-    return {"sa": sa, "so": so, "db": db, "User": User}
-
+# Создаём приложение и инициализируем миграции
+app = create_app(Config)
+Migrate(app, db)
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True, host="127.0.0.1", port=5000)
+    # Запускаем сервер через SocketIO с eventlet
+    socketio.run(
+        app, host="0.0.0.0", port=5000, debug=True
+    )  # debug=False для продакшена

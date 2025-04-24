@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/messenger.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/filetree.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+    {% block styles %}
+    {% endblock %}
+
+    
+</head>
+
+<body>
+    <div class="header">
+        {% if current_endpoint != 'ide_blueprint.ide' %}
+        <div class="ide-link"><a href="{{ url_for('ide_blueprint.ide') }}"><img class="icon-header" src="{{ url_for('static', filename='img/icons/ide.svg') }}" alt="IDE"></a></div>
+        {% endif %}
+        <div class="center-pos">
+            <div class="logo-block">
+                <img src="{{ url_for('static', filename='img/logo.png') }}" class="logo-style icon-header">
+                <div class="header-title">AiLab WEB</div>
+            </div>
+            {% if current_endpoint != 'profile_blueprint.profile' %}
+            <a href="{{ url_for('profile_blueprint.profile', id=current_user.id) }}" class="profile-icon">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile.profile_photo) }}" alt="Профиль" class="icon-header">
+            </a>    
+            {% endif %}
+            {% if current_endpoint == 'profile_blueprint.profile' and (id is not defined or id != current_user.id) %}
+            <a href="{{ url_for('profile_blueprint.profile', id=current_user.id) }}" class="profile-icon">
+                <img src="{{ url_for('static', filename='uploads/' + current_user.profile.profile_photo) }}" alt="Профиль" class="icon-header">
+            </a>
+            {% endif %}
+        </div>
+        
+        <div class="filetree-icon">
+            <img src="{{ url_for('static', filename='img/icons/mess.svg') }}" alt="filetree" class="icon-header">
+        </div>
+
+        <div class="messenger-icon">
+            <span class="badge hidden" id="unread-count">0</span>
+            <img src="{{ url_for('static', filename='img/icons/mess.svg') }}" alt="messanger" class="icon-header">
+        </div>
+
+        <div class="night-mode"><img src="{{ url_for('static', filename='img/icons/sun.svg') }}" alt="sun" class="icon-header"></div>
+    </div>
+
+    <div class="filetree-container" id="filetree-container" data-user-id="{{ current_user.id | default(0, true) }}" data-context-type="root">
+        <div class="filetree-content" id="filetree-content"></div>
+    </div>
+
+
+    {% block content %}
+    {% endblock %}
+
+    <div class="messenger-container" id="messenger-container" data-user-id="{{ current_user.id | default(0, true) }}">
+        <div class="messenger-header" id="messenger-header">
+            <div class="search-container">
+                <input type="text" id="contact-search" placeholder="Поиск контактов..." class="search-input">
+                <button id="close-messenger" class="close-button">×</button>
+            </div>
+        </div>
+        <div class="messenger-content" id="messenger-content"></div>
+    </div>
+    <div id="contextMenu" class="context-menu">
+        <ul id="contextMenuList"></ul>
+    </div>
+    <div id="filetreeContextMenu" class="context-menu">
+        <ul id="filetreeContextMenuList"></ul>
+    </div>
+    
+    
+    <script>
+        function playNotificationSound() {
+            const isChatOpen = document.getElementById('messenger-container').classList.contains('open');
+            const isWindowFocused = document.hasFocus();
+            
+            if (!isChatOpen && !isWindowFocused) {
+                const audio = new Audio("{{ url_for('static', filename='sounds/glam.mp3') }}");
+                audio.volume = 0.3;
+                audio.play().catch(e => console.log('Не удалось воспроизвести звук:', e));
+            }
+        }
+    </script>
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/messenger.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/filetree.js') }}"></script>
+    
+    {% block scripts %}
+    {% endblock %}
+    <!-- В base.html перед закрывающим </body> -->
+    
+</body>
+
+</html>

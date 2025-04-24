@@ -1,43 +1,77 @@
-import eventlet
-
-eventlet.monkey_patch()
-from .routes import (
-    main_bp,
-    register_socketio_events,
-)  # Импортируем наш Blueprint и функцию, где регистрируются события
-from config import Config
-import os
-from flask_migrate import Migrate
 from flask import Flask
-from .extensions import socketio, db, login
+from flask_login import LoginManager
+from flask_socketio import SocketIO
+from flask_sqlalchemy import SQLAlchemy
+from importlib import import_module
+from os import path
+
+appdir = path.abspath(path.dirname(__file__))
+USER_FILES_PATH = path.join(appdir, "./base/user_files")
+UPLOAD_FOLDER = path.join(appdir, "./base/static/uploads")
+
+# Инициализация расширений
+db = SQLAlchemy()
+login_manager = LoginManager()
+socketio = SocketIO(cors_allowed_origins="*", engineio_logger=True, logger=True)
 
 
-MAIN_FOLDER = os.path.dirname(os.path.abspath(__file__))
+def _register_socketio(app):
+    """Инициализация SocketIO"""
+    from app.ide.routes import register_socketio_events
+
+    socketio.init_app(app)
+    register_socketio_events(socketio)
 
 
-def create_app():
+def _register_extensions(app):
+    """Инициализация всех расширений (SQLAlchemy, LoginManager, SocketIO)"""
+    db.init_app(app)
+    login_manager.init_app(app)
+    _register_socketio(app)
+
+
+def _register_blueprints(app):
+    """Регистрация blueprints"""
+    for module_name in (
+        "base",
+        "auth",
+        "ide",
+        "profile",
+        "friendship",
+        "messanger",
+        "filetree",
+    ):
+        print(f"Регистрируем blueprint: app.{module_name}.routes")  # Для отладки
+        module = import_module(f"app.{module_name}.routes")
+        app.register_blueprint(module.blueprint)
+
+
+def _configure_database(app):
+    """Настройка базы данных"""
+    # Инициализация базы данных и создание таблиц
+    with app.app_context():
+        db.create_all()  # Создаём таблицы, если их нет
+
+    # Очистка сессии после каждого запроса
+    @app.teardown_request
+    def shutdown_session(exception=None):
+        db.session.remove()
+
+
+def create_app(config):
+    """Создание приложения Flask"""
     app = Flask(
         __name__,
-        static_folder=os.path.join(MAIN_FOLDER, "..", "static"),
-        template_folder=os.path.join(MAIN_FOLDER, "..", "templates"),
-    )  # Создаём Flask-приложение
+        static_folder="base/static",
+        template_folder="base/templates",
+    )
+    app.config.from_object(config)
 
-    app.config.from_object(Config)
-    db.init_app(app)
-    socketio.init_app(app)
-    login.login_view = "main_bp.login"  # Указываем правильный endpoint
-    login.init_app(app)
-    # В конфигурации Flask перед созданием app
-    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0  # Отключаем кеширование для статики
-    app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50MB лимит
+    from app.base import models
 
-    migrate = Migrate(app, db)
-
-    from .models import User
-
-    app.register_blueprint(main_bp)  # Регистрируем Blueprint
-    register_socketio_events(
-        socketio
-    )  # Регистрируем события для SocketIO (обработчики on('execute'), on('console_input'), и т.д.)
+    # Инициализация расширений и blueprints
+    _register_extensions(app)
+    _register_blueprints(app)
+    _configure_database(app)
 
     return app
