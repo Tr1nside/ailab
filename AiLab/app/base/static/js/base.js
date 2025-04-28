@@ -128,8 +128,7 @@ function handleMenuAction(action) {
                     fetch('/api/execute-action', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRFToken': getCookie('csrf_token')
+                            'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(postData)
                     })
@@ -216,8 +215,7 @@ function handleMenuAction(action) {
     fetch('/api/execute-action', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCookie('csrf_token')
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify(postData)
     })

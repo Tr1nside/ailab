@@ -4,7 +4,7 @@ from flask import (
     jsonify,
     send_file,
     Response,
-)  # Импортируем необходимые модули из Flask
+)
 import os
 from flask_login import current_user
 from app import UPLOAD_FOLDER, USER_FILES_PATH
@@ -26,7 +26,6 @@ class FileTreeItem(TypedDict):
     children: List["FileTreeItem"]
 
 
-# Тип для элемента JSON-запроса
 class FileActionElement(TypedDict, total=False):
     path: str
     old_path: str
@@ -36,7 +35,6 @@ class FileActionElement(TypedDict, total=False):
     content: str
 
 
-# Тип для JSON-запроса
 class FileActionRequest(TypedDict):
     action: str
     element: FileActionElement
@@ -56,35 +54,20 @@ def _file_exists(filename):
     return os.path.exists(file_path)
 
 
-# Регистрируем функцию как фильтр для Jinja2
 @blueprint.app_template_filter("file_exists")
 def file_exists_filter(filename):
     return _file_exists(filename)
 
 
 def _ensure_user_folder(user_id: int, base_path: str = USER_FILES_PATH) -> Path:
-    """Создаёт папку пользователя, если она не существует.
-    Args:
-        user_id (int): ID пользователя.
-        base_path (str): Базовый путь для пользовательских папок.
-    Returns:
-        Path: Путь к папке пользователя как объект Path.
-    """
-
+    """Создаёт папку пользователя, если она не существует."""
     user_folder = Path(base_path) / str(user_id)
     user_folder.mkdir(parents=True, exist_ok=True)
     return user_folder
 
 
 def _scan_directory(directory: Path, base_folder: Path) -> List[FileTreeItem]:
-    """Рекурсивно сканирует директорию и возвращает список элементов.
-
-    Args:
-        directory (Path): Путь к сканируемой директории.
-        base_folder (Path): Базовая папка для вычисления относительных путей.
-    Returns:
-        List[FileTreeItem]: Список словарей с информацией о файлах и папках.
-    """
+    """Рекурсивно сканирует директорию и возвращает список элементов."""
     result: List[FileTreeItem] = []
     try:
         for entry in directory.iterdir():
@@ -94,9 +77,9 @@ def _scan_directory(directory: Path, base_folder: Path) -> List[FileTreeItem]:
                 "name": entry.name,
                 "path": relative_path,
                 "type": "folder" if entry.is_dir() else "file",
-                "size": stats.st_size,
+                "size": stats.st_size if entry.is_file() else 0,
                 "modified": datetime.fromtimestamp(stats.st_mtime).isoformat(),
-                "children": [],  # Инициализируем пустой список для всех элементов
+                "children": [],
             }
             if entry.is_dir():
                 item["children"] = _scan_directory(entry, base_folder)
@@ -113,10 +96,7 @@ def _scan_directory(directory: Path, base_folder: Path) -> List[FileTreeItem]:
 @blueprint.route("/api/filetree", methods=["GET"])
 @login_required
 def get_filetree() -> Union[Response, WerkzeugResponse]:
-    """Возвращает структуру файлового дерева пользователя.
-    Returns:
-        Union[Response, WerkzeugResponse]: JSON-ответ с файловым деревом или ошибкой.
-    """
+    """Возвращает структуру файлового дерева пользователя."""
     try:
         user_folder = _ensure_user_folder(current_user.id)
         filetree = _scan_directory(user_folder, user_folder)
@@ -126,15 +106,7 @@ def get_filetree() -> Union[Response, WerkzeugResponse]:
 
 
 def _ensure_safe_path(base_path: Path, target_path: Path) -> Optional[Path]:
-    """Проверяет, что целевой путь находится внутри базовой папки.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        target_path (Path): Проверяемый путь.
-
-    Returns:
-        Optional[Path]: Проверенный путь или None, если путь недопустим.
-    """
+    """Проверяет, что целевой путь находится внутри базовой папки."""
     try:
         resolved_path = target_path.resolve()
         if not str(resolved_path).startswith(str(base_path.resolve())):
@@ -145,15 +117,7 @@ def _ensure_safe_path(base_path: Path, target_path: Path) -> Optional[Path]:
 
 
 def _create_file(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Создаёт новый файл.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о файле.
-
-    Returns:
-        Dict[str, Any]: Результат операции.
-    """
+    """Создаёт новый файл."""
     file_path = _ensure_safe_path(
         base_path, base_path / element.get("path", "new_file.py")
     )
@@ -167,15 +131,7 @@ def _create_file(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
 
 
 def _create_folder(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Создаёт новую папку.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о папке.
-
-    Returns:
-        Dict[str, Any]: Результат операции.
-    """
+    """Создаёт новую папку."""
     folder_path = _ensure_safe_path(
         base_path, base_path / element.get("path", "new_folder")
     )
@@ -188,15 +144,7 @@ def _create_folder(base_path: Path, element: FileActionElement) -> Dict[str, Any
 
 
 def _rename_element(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Переименовывает файл или папку.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о путях (старый и новый).
-
-    Returns:
-        Dict[str, Any]: Результат операции.
-    """
+    """Переименовывает файл или папку."""
     old_path = _ensure_safe_path(base_path, base_path / element.get("old_path", ""))
     new_path = _ensure_safe_path(base_path, base_path / element.get("new_path", ""))
     if not old_path or not new_path:
@@ -210,15 +158,7 @@ def _rename_element(base_path: Path, element: FileActionElement) -> Dict[str, An
 
 
 def _delete_element(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Удаляет файл или папку.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о пути.
-
-    Returns:
-        Dict[str, Any]: Результат операции.
-    """
+    """Удаляет файл или папку."""
     path = _ensure_safe_path(base_path, base_path / element.get("path", ""))
     if not path:
         return {"status": "error", "message": ERROR_INVALID_PATH, "code": 403}
@@ -231,39 +171,8 @@ def _delete_element(base_path: Path, element: FileActionElement) -> Dict[str, An
     return {"status": "success", "message": "Элемент удалён"}
 
 
-def _move_element(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Перемещает файл или папку.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о путях (исходный и целевой).
-
-    Returns:
-        Dict[str, Any]: Результат операции.
-    """
-    src_path = _ensure_safe_path(base_path, base_path / element.get("src_path", ""))
-    dest_path = _ensure_safe_path(base_path, base_path / element.get("dest_path", ""))
-    ic(src_path, dest_path)
-    if not src_path or not dest_path:
-        return {"status": "error", "message": ERROR_INVALID_PATH, "code": 403}
-    if not src_path.exists():
-        return {"status": "error", "message": ERROR_NOT_FOUND, "code": 404}
-    if dest_path.exists():
-        return {"status": "error", "message": ERROR_EXISTS, "code": 400}
-    shutil.move(str(src_path), str(dest_path))
-    return {"status": "success", "message": "Элемент перемещён"}
-
-
 def _copy_element(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Копирует файл или папку.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о путях (исходный и целевой).
-
-    Returns:
-        Dict[str, Any]: Результат операции.
-    """
+    """Копирует файл или папку."""
     src_path = _ensure_safe_path(base_path, base_path / element.get("src_path", ""))
     dest_path = _ensure_safe_path(base_path, base_path / element.get("dest_path", ""))
     if not src_path or not dest_path:
@@ -280,15 +189,7 @@ def _copy_element(base_path: Path, element: FileActionElement) -> Dict[str, Any]
 
 
 def _read_file(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Читает содержимое файла.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о пути файла.
-
-    Returns:
-        Dict[str, Any]: Результат операции с содержимым файла.
-    """
+    """Читает содержимое файла."""
     file_path = _ensure_safe_path(base_path, base_path / element.get("path", ""))
     if not file_path:
         return {"status": "error", "message": ERROR_INVALID_PATH, "code": 403}
@@ -303,15 +204,7 @@ def _read_file(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
 
 
 def _write_file(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
-    """Записывает содержимое в файл.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о пути и содержимом файла.
-
-    Returns:
-        Dict[str, Any]: Результат операции.
-    """
+    """Записывает содержимое в файл."""
     file_path = _ensure_safe_path(base_path, base_path / element.get("path", ""))
     content = element.get("content", "")
     if not file_path:
@@ -326,15 +219,7 @@ def _write_file(base_path: Path, element: FileActionElement) -> Dict[str, Any]:
 def _download_file(
     base_path: Path, element: FileActionElement
 ) -> Union[Response, Dict[str, Any]]:
-    """Отправляет файл для скачивания.
-
-    Args:
-        base_path (Path): Базовая папка пользователя.
-        element (FileActionElement): Данные о пути файла.
-
-    Returns:
-        Union[Response, Dict[str, Any]]: Ответ с файлом или ошибка.
-    """
+    """Отправляет файл для скачивания."""
     file_path = _ensure_safe_path(base_path, base_path / element.get("path", ""))
     if not file_path:
         return {"status": "error", "message": ERROR_INVALID_PATH, "code": 403}
@@ -346,23 +231,17 @@ def _download_file(
 @blueprint.route("/api/file-action", methods=["POST"])
 @login_required
 def file_action() -> Union[Response, WerkzeugResponse]:
-    """Обрабатывает действия с файлами и папками.
-
-    Returns:
-        Union[Response, WerkzeugResponse]: JSON-ответ или файл для скачивания.
-    """
+    """Обрабатывает действия с файлами и папками."""
     try:
         data: FileActionRequest = request.get_json()
         action = data.get("action", "")
         element = data.get("element", {})
         user_folder = Path(os.path.join(USER_FILES_PATH, str(current_user.id)))
-
         actions = {
             "create_file": _create_file,
             "create_folder": _create_folder,
             "rename": _rename_element,
             "delete": _delete_element,
-            "move": _move_element,
             "copy": _copy_element,
             "read_file": _read_file,
             "write_file": _write_file,
@@ -375,6 +254,5 @@ def file_action() -> Union[Response, WerkzeugResponse]:
                 return jsonify(result), result.get("code", 200)
             return result  # Для download_file
         return jsonify({"status": "error", "message": ERROR_UNKNOWN_ACTION}), 400
-
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

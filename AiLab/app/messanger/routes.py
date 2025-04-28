@@ -9,11 +9,22 @@ from flask import (
 import os
 from flask_login import current_user
 from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, and_
 from app import db, socketio, UPLOAD_FOLDER
 from app.base.models import User, Message, Attachment
 from flask_login import login_required
 from werkzeug.utils import secure_filename
 from datetime import datetime
+
+
+CONTEXT_MENU_ITEMS = {
+    "message": [
+        {"label": "Редактировать", "action": "edit"},
+        {"label": "Удалить", "action": "delete"},
+    ],
+    "media": [{"label": "Скачать", "action": "download"}],
+}
+
 
 
 @blueprint.route("/messenger/contacts")
@@ -213,3 +224,104 @@ def mark_message_read(message_id):
     message.is_read = True
     db.session.commit()
     return jsonify({"success": True})
+
+
+@blueprint.route("/api/context-menu", methods=["GET"])
+def get_context_menu():
+    context_type = request.args.get("type")  # file, folder и т. д.
+    menu_items = CONTEXT_MENU_ITEMS.get(context_type, [])
+    return jsonify({"items": menu_items})
+
+
+@blueprint.route("/api/execute-action", methods=["POST"])
+def execute_action():
+    try:
+        data = request.get_json()
+        action = data.get("action")
+        element_data = data.get("element")
+
+        if action == "delete":
+            item_id = element_data.get("id")
+            item = Message.query.get_or_404(item_id)
+            if item.sender_id != current_user.id:
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Вы можете удалять только свои сообщения",
+                    }
+                ), 403
+            recipient_id = item.recipient_id
+            db.session.delete(item)
+            db.session.commit()
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": f"Сообщение {item_id} удалено",
+                    "recipient_id": recipient_id,
+                }
+            )
+
+        elif action == "edit":
+            item_id = element_data.get("id")
+            new_text = element_data.get("content")
+            item = Message.query.get_or_404(item_id)
+            if item.sender_id != current_user.id:
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Вы можете редактировать только свои сообщения",
+                    }
+                ), 403
+            if not new_text.strip():
+                return jsonify(
+                    {
+                        "status": "error",
+                        "message": "Текст сообщения не может быть пустым",
+                    }
+                ), 400
+            item.text = new_text.strip()
+            db.session.commit()
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": f"Сообщение {item_id} отредактировано",
+                    "recipient_id": item.recipient_id,
+                }
+            )
+
+        elif action == "clear_history":
+            recipient_id = element_data.get("recipient_id")
+            messages = Message.query.filter(
+                or_(
+                    and_(
+                        Message.sender_id == current_user.id,
+                        Message.recipient_id == recipient_id,
+                    ),
+                    and_(
+                        Message.sender_id == recipient_id,
+                        Message.recipient_id == current_user.id,
+                    ),
+                )
+            ).all()
+
+            for msg in messages:
+                for attachment in msg.attachments:
+                    db.session.delete(attachment)
+                db.session.delete(msg)
+
+            db.session.commit()
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "История чата очищена",
+                    "recipient_id": recipient_id,
+                }
+            )
+        elif action == "download":
+            return jsonify({"status": "success", "message": "Скаченно медиа"})
+        else:
+            return jsonify({"status": "error", "message": "Неизвестное действие"}), 400
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
