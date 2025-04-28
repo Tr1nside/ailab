@@ -14,6 +14,7 @@ import shutil
 from pathlib import Path
 from typing import List, TypedDict, Union, Dict, Any, Optional
 from werkzeug.wrappers import Response as WerkzeugResponse
+import icecream as ic
 
 
 class FileTreeItem(TypedDict):
@@ -242,6 +243,7 @@ def _move_element(base_path: Path, element: FileActionElement) -> Dict[str, Any]
     """
     src_path = _ensure_safe_path(base_path, base_path / element.get("src_path", ""))
     dest_path = _ensure_safe_path(base_path, base_path / element.get("dest_path", ""))
+    ic(src_path, dest_path)
     if not src_path or not dest_path:
         return {"status": "error", "message": ERROR_INVALID_PATH, "code": 403}
     if not src_path.exists():
