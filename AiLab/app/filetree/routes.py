@@ -233,7 +233,6 @@ def _download_file(
 def file_action() -> Union[Response, WerkzeugResponse]:
     """Обрабатывает действия с файлами и папками."""
     try:
-        print(52222)
         data: FileActionRequest = request.get_json()
         action = data.get("action", "")
         element = data.get("element", {})
@@ -254,7 +253,6 @@ def file_action() -> Union[Response, WerkzeugResponse]:
             if isinstance(result, dict):
                 return jsonify(result), result.get("code", 200)
             return result  # Для download_file
-        print("NU PIZDEEEC")
         return jsonify({"status": "error", "message": ERROR_UNKNOWN_ACTION}), 400
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500

@@ -418,8 +418,10 @@ function executeCode() {
         saveContentToFile(filePath, code);
     }
 
-    const code = activeEditor.getValue();
-    socket.emit('execute', code);
+    userId = document.querySelector(".filetree-icon").dataset.userId
+    
+    data = [userId, filePath]
+    socket.emit('execute', data);
 }
 
 function appendToConsole(text) {
@@ -428,29 +430,42 @@ function appendToConsole(text) {
 }
 
 socket.on('request_input', (prompt) => {
+    console.log("Received request_input with prompt:", prompt);
     appendToConsole(prompt + "\n");
     consoleInput.readOnly = false;
     updateConsoleInputClass();
     consoleInput.focus();
+    setTimeout(() => consoleInput.focus(), 0); // Принудительный фокус
 });
 
 socket.on('console_output', (data) => {
+    console.log("Received console_output:", data);
     appendToConsole(data + "\n");
+});
+
+socket.on('connect_error', (error) => {
+    console.error('Socket connection error:', error);
+    showNotification('Ошибка соединения с сервером');
 });
 
 function handleConsoleKeyPress(event) {
     if (event.key === "Enter") {
         event.preventDefault();
         const value = consoleInput.value.trim();
+        console.log("Enter pressed, value:", value);
         if (value) {
             socket.emit('console_input', value);
             appendToConsole(value + "\n");
+            console.log("Sent console_input:", value);
+        } else {
+            console.log("Empty input, skipping emit");
         }
         consoleInput.value = "";
         consoleInput.readOnly = true;
-        consoleInput.classList.remove('console-input-active');
+        updateConsoleInputClass();
     }
 }
+
 consoleInput.addEventListener('keydown', handleConsoleKeyPress);
 
 // 🔹 Уведомления
