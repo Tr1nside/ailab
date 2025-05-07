@@ -5,7 +5,7 @@
 {% block styles %}
 <!-- CodeMirror Основной стиль -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
-<!-- Тема Dracula (или выбери другую) -->
+<!-- Тема Dracula -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
 <!-- Стили для автодополнения -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
@@ -16,17 +16,29 @@
 {% block content %}
     <div class="container">
         <div class="tabs">
-            <div class="tab active" data-tab="tab1"><span>main.py</span><span class="close-tab">×</span>
-                <input type="text" class="tab-input" value="main.py">
-            </div>
-            <div class="tab" id="create_tab" data-tab="create_tab">+</div>
+            <div class="tab active" data-tab="tab1"><span>main.py</span><span class="close-tab">×</span></div>
         </div>
 
-        <!-- Заменили div.editor на div с id для CodeMirror -->
+        <!-- Область для редактора кода -->
         <div class="code-area" data-tab-content="tab1"></div>
 
         <div class="toolbar">
             <div class="toolbar-left">
+                <!-- Выбор языка -->
+                <select id="language-select">
+                    <option value="python">Python</option>
+                    <option value="cpp">C++</option>
+                </select>
+                <!-- Выбор версии -->
+                <select id="version-select"></select>
+                <!-- Выбор виртуального окружения -->
+                <select id="venv-select">
+                    <option value="">Без venv</option>
+                    <option value="venv">venv</option>
+                </select>
+                <!-- Поле для ввода библиотек -->
+                <input id="libraries-input" type="text" placeholder="Библиотеки (через пробел)">
+                <!-- Кнопки управления -->
                 <button class="button run-button" onclick="executeCode()"><i><img class="button-icons" src="{{ url_for('static', filename='img/play443.svg') }}"></i></button>
                 <button class="button save-button" onclick="saveCodeToFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/save.svg') }}"></i></button>
                 <button class="button open-button" onclick="loadFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/load.svg') }}"></i></button>
@@ -50,14 +62,14 @@
 <!-- Основной CodeMirror -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
 
 <!-- Дополнения для CodeMirror -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script> <!-- Автозакрытие скобок -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script> <!-- Автодополнение -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script> <!-- Слова из текста -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script> <!-- Комментирование Ctrl+/ -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script> <!-- Подсветка скобок -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script> <!-- Закрытие скобок -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/anyword-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
 
 <!-- Подключаем Socket.IO -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>

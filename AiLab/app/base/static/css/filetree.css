@@ -9,6 +9,8 @@
     --scrollbar-track: #f5f5f5;
     --scrollbar-thumb: #d8d8d8;
     --scrollbar-thumb-hover: #c1c1c1;
+    --li-hover:  #c1c1c1;
+    --li-selected:  #a1a1a1; 
 }
 
 .dark-mode {
@@ -22,6 +24,8 @@
     --scrollbar-track: #2d2d2d;
     --scrollbar-thumb: #555;
     --scrollbar-thumb-hover: #666;
+    --li-hover: #2e2e2e;
+    --li-selected: #3c3c3c; 
 }
 
 .filetree-container {
@@ -96,11 +100,11 @@ ul {
   }
   
   li:hover {
-    background-color: #e6f3ff;
+    background-color: var(--li-hover);
   }
   
   li.selected {
-    background-color: #cce8ff;
+    background-color: var(--li-selected);
   }
   
   li > ul {
@@ -114,11 +118,12 @@ ul {
   
   .context-menu {
     position: fixed;
-    background: #fff;
-    border: 1px solid #ccc;
+    background: var(--filetree-bg);
+    border: 1px solid var(--filetree-border); 
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.2);
     z-index: 1001;
     display: none;
+    color: var(--filetree-text);
 }
 
 .context-menu.visible {
@@ -135,8 +140,4 @@ ul {
 .context-menu li {
     padding: 8px 12px;
     cursor: pointer;
-}
-
-.context-menu li:hover {
-    background: #f0f0f0;
 }

@@ -40,10 +40,11 @@
             </a>
             {% endif %}
         </div>
-        
+        {% if current_endpoint == 'ide_blueprint.ide' %}
         <div class="filetree-icon">
             <img src="{{ url_for('static', filename='img/icons/mess.svg') }}" alt="filetree" class="icon-header">
         </div>
+        {% endif %}
 
         <div class="messenger-icon">
             <span class="badge hidden" id="unread-count">0</span>

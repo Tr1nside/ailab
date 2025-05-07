@@ -12,13 +12,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.addEventListener('click', hideContextMenu);
     
-    // Проверка наличия элементов контекстного меню
     if (!contextMenu || !contextMenuList) {
         console.error('Context menu elements not found:', { contextMenu, contextMenuList });
         return;
     }
 
-    // Контекстное меню
     const contextMenuItems = {
         file: [
             { label: 'Открыть', action: 'read_file' },
@@ -40,7 +38,6 @@ document.addEventListener('DOMContentLoaded', function () {
         ],
     };
 
-    // Функция для показа контекстного меню
     function showContextMenu(x, y, type, element) {
         console.log('Showing context menu:', { x, y, type, element });
         const items = contextMenuItems[type] || [];
@@ -62,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
             contextMenuList.appendChild(li);
         });
 
-        // Ограничение позиции меню
         const menuWidth = contextMenu.offsetWidth || 150;
         const menuHeight = contextMenu.offsetHeight || 100;
         const maxX = window.innerWidth - menuWidth;
@@ -79,13 +75,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Скрытие контекстного меню
     function hideContextMenu() {
         contextMenu.classList.remove('visible');
         console.log('Context menu hidden');
     }
 
-    // Обработка действий контекстного меню
     function handleContextMenuAction(action, element) {
         const path = element ? element.dataset.path : '';
         let postData;
@@ -115,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 element.insertBefore(textarea, nameElement.nextSibling);
                 textarea.focus();
 
-                // Сохранение нового имени при нажатии Enter
                 textarea.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.preventDefault();
@@ -138,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function () {
                                 .then(data => {
                                     if (data.status === 'success') {
                                         loadFileTree();
-                                        alert(data.message);
+                                        window.updateTabsOnRename(path, newPath); // Обновляем вкладки
                                     } else {
                                         alert(`Ошибка: ${data.message}`);
                                     }
@@ -159,7 +152,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
                 return;
             case 'delete':
-                if (!confirm(`Удалить ${element.querySelector('.name').textContent}?`)) return;
                 postData = {
                     action: 'delete',
                     element: { path: path },
@@ -212,10 +204,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('Response data:', data);
                 if (data.status === 'success') {
                     if (action === 'read_file') {
-                        alert(`Содержимое файла:\n${data.content}`);
+                        window.openFileInTab(path, data.content);
                     } else {
                         loadFileTree();
-                        alert(data.message);
                     }
                 } else {
                     alert(`Ошибка: ${data.message}`);
@@ -227,14 +218,12 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Получение CSRF-токена
     function getCookie(name) {
         const value = `; ${document.cookie}`;
         const parts = value.split(`; ${name}=`);
         if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
-    // Функция для загрузки структуры файлов
     function loadFileTree() {
         fetch('/api/filetree', {
             method: 'GET',
@@ -255,7 +244,6 @@ document.addEventListener('DOMContentLoaded', function () {
             });
     }
 
-    // Функция для отрисовки дерева файлов
     function renderFileTree(items, parentElement) {
         parentElement.innerHTML = '';
         const ul = document.createElement('ul');
@@ -270,7 +258,7 @@ document.addEventListener('DOMContentLoaded', function () {
     
             const icon = document.createElement('span');
             icon.className = 'icon';
-            icon.textContent = item.type === 'folder' ? '📁' : '📄'; // Закрытая папка или файл
+            icon.textContent = item.type === 'folder' ? '📁' : '📄';
     
             const name = document.createElement('span');
             name.className = 'name';
@@ -294,15 +282,45 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (li.dataset.type === 'folder') {
                     const isOpen = li.classList.contains('open');
                     li.classList.toggle('open', !isOpen);
-    
-                    icon.textContent = isOpen ? '📁' : '📂'; 
-                    
+                    icon.textContent = isOpen ? '📁' : '📂';
                     if (childrenUl) {
                         childrenUl.style.display = isOpen ? 'none' : 'block';
                     }
                 } else if (li.dataset.type === 'file') {
                     document.querySelectorAll('.tree-item').forEach(el => el.classList.remove('selected'));
                     li.classList.add('selected');
+                }
+            });
+
+            li.addEventListener('dblclick', (e) => {
+                e.stopPropagation();
+                if (li.dataset.type === 'file') {
+                    postData = {
+                        action: 'read_file',
+                        element: { path: li.dataset.path },
+                    };
+                    fetch('/api/file-action', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrf_token'),
+                        },
+                        body: JSON.stringify(postData),
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! Status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Response data:', data);
+                            if (data.status === 'success') {
+                                window.openFileInTab(li.dataset.path, data.content);
+                            } else {
+                                alert(`Ошибка: ${data.message}`);
+                            }
+                        });
                 }
             });
     
@@ -340,7 +358,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 const srcPath = e.dataTransfer.getData('text/plain');
                 const srcName = srcPath.split('/').pop();
                 
-                // Проверка на попытку перемещения папки в себя или подкаталог
                 if (item.path.startsWith(srcPath + '/') || item.path === srcPath) {
                     alert('Невозможно переместить папку внутрь себя или своего подкаталога');
                     return;
@@ -363,7 +380,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(data => {
                     if (data.status === 'success') {
                         loadFileTree();
-                        alert(data.message);
+                        window.updateTabsOnRename(srcPath, destPath); // Обновляем вкладки при перемещении
                     } else {
                         alert(`Ошибка: ${data.message}`);
                     }
