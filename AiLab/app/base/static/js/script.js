@@ -4,7 +4,6 @@ let codeMirrorInstances = {};
 const consoleOutput = document.querySelector('.console-output');
 const consoleInput = document.querySelector('.console-input');
 const socket = io();
-const languageSelect = document.querySelector('#language-select');
 
 // 🔹 Список ключевых слов и встроенных функций Python для автодополнения
 const pythonKeywords = [
@@ -26,7 +25,7 @@ const pythonKeywords = [
     "deque", "defaultdict", "OrderedDict", "Counter", "ChainMap", "namedtuple",
     "dataclass",
     "array", "heapq", "queue", "PriorityQueue",
-    "self", "__init__", "__main__", "os", "sys", "json", "time", "re",
+    "self", "__init__", "__main__", " Piccolo ", "sys", "json", "time", "re",
     "math", "random", "datetime", "open", "read", "write", "close"
 ];
 
@@ -73,7 +72,7 @@ function pythonHint(cm) {
 // 🔹 Функция инициализации CodeMirror
 function initializeCodeMirror(codeArea, content = "", filePath = null) {
     const cm = CodeMirror(codeArea, {
-        mode: languageSelect.value === "python" ? "python" : "text/x-c++src",
+        mode: "python",
         theme: body.classList.contains('dark-mode') ? "dracula" : "default",
         lineNumbers: true,
         gutters: ["CodeMirror-linenumbers"],
@@ -267,12 +266,17 @@ window.updateTabsOnRename = function(oldPath, newPath) {
     document.querySelectorAll('.tab').forEach(tab => {
         const tabFilePath = tab.dataset.filePath;
         if (tabFilePath === oldPath || tabFilePath.startsWith(oldPath + '/')) {
+            // Обновляем путь, заменяя старую часть пути на новую
             const updatedPath = tabFilePath === oldPath
                 ? newPath
                 : newPath + tabFilePath.substring(oldPath.length);
             tab.dataset.filePath = updatedPath;
+            
+            // Обновляем название вкладки
             const newFileName = updatedPath.split('/').pop();
             tab.querySelector('span').textContent = newFileName;
+            
+            // Перезапускаем автосохранение для обновлённого пути
             const tabId = tab.dataset.tab;
             manageAutoSave(tabId, updatedPath);
         }
@@ -307,7 +311,7 @@ function closeTab(tab) {
     saveTabsToLocalStorage();
 }
 
-// 🔹 Сохранение вкладок в localStorage
+// 🔹 Сохранение вкладок в localStorage (только ID и путь)
 function saveTabsToLocalStorage() {
     const tabsData = [];
     document.querySelectorAll('.tab').forEach(tab => {
@@ -320,7 +324,7 @@ function saveTabsToLocalStorage() {
     localStorage.setItem('savedTabs', JSON.stringify(tabsData));
 }
 
-// 🔹 Загрузка вкладок из localStorage
+// 🔹 Загрузка вкладок из localStorage с подгрузкой содержимого
 async function loadTabsFromLocalStorage() {
     const savedTabs = JSON.parse(localStorage.getItem('savedTabs')) || [];
     if (savedTabs.length === 0) return;
@@ -355,7 +359,11 @@ tabs.addEventListener('click', (event) => {
 // 🔹 Инициализация
 document.addEventListener('DOMContentLoaded', () => {
     const nightModeButton = document.querySelector('.night-mode');
+
+    // Загрузка сохранённых вкладок
     loadTabsFromLocalStorage();
+
+    // Инициализация темы
     const savedTheme = localStorage.getItem('theme') === 'dark';
     updateCodeMirrorTheme(savedTheme);
 
@@ -378,33 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nightModeButton) {
         nightModeButton.addEventListener('click', toggleCodeMirrorTheme);
     }
-
-    // 🔹 Управление виртуальными окружениями
-    const createVenvButton = document.createElement('button');
-    createVenvButton.className = 'button';
-    createVenvButton.innerHTML = '<i>Создать venv</i>';
-    document.querySelector('.toolbar-left').appendChild(createVenvButton);
-
-    createVenvButton.addEventListener('click', () => {
-        const venvName = prompt('Введите имя виртуального окружения:', 'venv');
-        if (venvName) {
-            fetch('/api/venv', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrf_token')
-                },
-                body: JSON.stringify({ action: 'create', venv_name: venvName })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    showNotification(data.message);
-                })
-                .catch(error => {
-                    showNotification('Ошибка создания виртуального окружения');
-                });
-        }
-    });
 });
 
 // 🔹 Удаляем автоматическое сохранение при каждом клике или вводе
@@ -435,30 +416,26 @@ function executeCode() {
     if (filePath) {
         const code = activeEditor.getValue();
         saveContentToFile(filePath, code);
-        socket.emit('execute', {
-            file_path: filePath,
-            language: languageSelect.value,
-            venv_name: 'venv' // Можно сделать выбор через интерфейс
-        });
-    } else {
-        consoleOutput.value += "\nОшибка: путь к файлу не указан.";
     }
+
+    const code = activeEditor.getValue();
+    socket.emit('execute', code);
 }
 
 function appendToConsole(text) {
-    consoleOutput.value += text + "\n";
+    consoleOutput.value += text;
     consoleOutput.scrollTop = consoleOutput.scrollHeight;
 }
 
 socket.on('request_input', (prompt) => {
-    appendToConsole(prompt);
+    appendToConsole(prompt + "\n");
     consoleInput.readOnly = false;
     updateConsoleInputClass();
     consoleInput.focus();
 });
 
 socket.on('console_output', (data) => {
-    appendToConsole(data);
+    appendToConsole(data + "\n");
 });
 
 function handleConsoleKeyPress(event) {
@@ -467,7 +444,7 @@ function handleConsoleKeyPress(event) {
         const value = consoleInput.value.trim();
         if (value) {
             socket.emit('console_input', value);
-            appendToConsole(value);
+            appendToConsole(value + "\n");
         }
         consoleInput.value = "";
         consoleInput.readOnly = true;
