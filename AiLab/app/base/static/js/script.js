@@ -420,7 +420,7 @@ function executeCode() {
 
     userId = document.querySelector(".filetree-icon").dataset.userId
     
-    data = [userId, filePath, 'python']
+    data = [userId, filePath]
     socket.emit('execute', data);
 }
 
