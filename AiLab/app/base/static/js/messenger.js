@@ -77,12 +77,16 @@ document.addEventListener('DOMContentLoaded', function () {
         if (messengerContainer.classList.contains('open')) {
             loadContacts();
         }
+        if (isIdePage()) {
+            document.querySelector('.part2-el').classList.toggle('open-messenger');
+        }
     });
 
     closeMessenger.addEventListener('click', function () {
         messengerContainer.classList.remove('open');
         if (searchInput) searchInput.value = '';
         filterContacts('');
+        document.querySelector('.part2-el').classList.remove('open-messenger');
     });
 
     // Загрузка списка контактов

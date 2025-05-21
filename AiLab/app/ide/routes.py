@@ -1,17 +1,70 @@
-from flask import render_template, request
+from flask import render_template, request, jsonify
 from flask_login import current_user, login_required
 from app.ide import blueprint
 from app import db, USER_FILES_PATH
 import sqlalchemy as sa
 from app.base.models import UserProfile
-import importlib.util
-import eventlet
-import builtins
-import contextlib
-import io
-import ast
+import subprocess
+import json
 import os
-import sys
+import shutil
+import logging
+
+# Настройка логирования
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Список стандартных библиотек Python
+STANDARD_LIBRARIES = [
+    "argparse",
+    "array",
+    "base64",
+    "bisect",
+    "calendar",
+    "cmath",
+    "collections",
+    "contextlib",
+    "copy",
+    "csv",
+    "datetime",
+    "decimal",
+    "difflib",
+    "enum",
+    "functools",
+    "hashlib",
+    "heapq",
+    "io",
+    "itertools",
+    "json",
+    "logging",
+    "math",
+    "operator",
+    "os",
+    "pathlib",
+    "pickle",
+    "random",
+    "re",
+    "shutil",
+    "socket",
+    "sqlite3",
+    "statistics",
+    "string",
+    "subprocess",
+    "sys",
+    "tempfile",
+    "threading",
+    "time",
+    "traceback",
+    "types",
+    "urllib",
+    "uuid",
+    "warnings",
+    "weakref",
+    "zlib",
+]
+
+# Системные библиотеки
+SYSTEM_LIBRARIES = ["pip", "setuptools", "wheel"]
 
 
 @blueprint.route("/ide")
@@ -24,101 +77,218 @@ def ide():
         "ide.html", current_endpoint=request.endpoint, profile=profile
     )
 
-pending_inputs = {}
 
-def register_socketio_events(socketio):
-    """
-    Функция, которая регистрирует все события SocketIO.
-    Вызывается из server.py, чтобы избежать циклического импорта.
-    """
+@blueprint.route("/libraries/<python_version>", methods=["GET"])
+@login_required
+def get_libraries(python_version):
+    """Возвращает список сторонних библиотек, установленных в интерпретаторе."""
+    version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python3"}
+    python_executable = shutil.which(version_map.get(python_version, "python3"))
+    if not python_executable:
+        logger.error(
+            f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
+        )
+        return jsonify(
+            {
+                "error": f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
+            }
+        ), 404
 
-    def find_local_module(module_name, user_path):
-        """Ищет файл модуля в папке пользователя и подпапках."""
-        for root, _, files in os.walk(user_path):
-            if f"{module_name}.py" in files:
-                return os.path.join(root, f"{module_name}.py")
-        return None
+    try:
+        result = subprocess.run(
+            [python_executable, "-m", "pip", "list", "--format=json"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True,
+        )
+        logger.debug(f"Вывод pip list для Python {python_version}: {result.stdout}")
+        pip_data = json.loads(result.stdout)
 
-    def load_local_module(module_name, file_path):
-        """Загружает локальный модуль через importlib."""
-        spec = importlib.util.spec_from_file_location(module_name, file_path)
-        if spec is None:
-            return None
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[module_name] = module
-        spec.loader.exec_module(module)
-        return module
-
-    @socketio.on("execute")
-    def execute_code(data):
-        userId, filePath = data
-        fullPath = f"{USER_FILES_PATH}/{userId}/{filePath}"
-        user_dir = os.path.dirname(fullPath)
-
-        # Читаем код
-        with open(fullPath, 'r', encoding='utf-8') as file:
-            code = file.read()
-
-        # Анализируем импорты с помощью ast
-        tree = ast.parse(code)
-        imports = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                for alias in node.names:
-                    imports.append(alias.name)
-            elif isinstance(node, ast.ImportFrom):
-                if node.module:  # Проверяем только импорты модулей
-                    imports.append(node.module)
-
-        # Подготавливаем среду
-        sid = request.sid
-        output_buffer = io.StringIO()
-        exec_globals = {
-            "__builtins__": builtins.__dict__.copy(),
-            "input": lambda prompt="": custom_input(prompt, output_buffer, socketio, sid),
-        }
-        local_env = {}
-
-        # Обрабатываем локальные импорты
-        for module_name in imports:
-            module_path = find_local_module(module_name, user_dir)
-            if module_path:
-                # Загружаем локальный модуль
-                module = load_local_module(module_name, module_path)
-                if module:
-                    exec_globals[module_name] = module
-                else:
-                    output_buffer.write(f"Ошибка: Не удалось загрузить модуль {module_name}\n")
-            # Если модуль не локальный, он будет обработан стандартным импортом в exec
-
-        # Выполняем код
-        try:
-            with contextlib.redirect_stdout(output_buffer):
-                exec(code, exec_globals, local_env)
-            result = output_buffer.getvalue().strip()
-            if not result:
-                result = "Код выполнен, но вывода не было."
-        except Exception as e:
-            result = f"Ошибка: {e}"
-
-        socketio.emit("console_output", result, room=sid)
-
-    def custom_input(prompt, output_buffer, socketio, sid):
-        result = output_buffer.getvalue().strip()
-        output_buffer.truncate(0)
-        output_buffer.seek(0)
-        if result:
-            socketio.emit("console_output", result, room=sid)
-        socketio.emit("request_input", prompt, room=sid)
-        ev = eventlet.Event()
-        pending_inputs[sid] = ev
-        return ev.wait()
-
-    @socketio.on("console_input")
-    def handle_console_input(data):
-        sid = request.sid
-        if sid in pending_inputs:
-            pending_inputs[sid].send(data)
-            del pending_inputs[sid]
+        # Проверяем формат данных
+        if isinstance(pip_data, dict) and "packages" in pip_data:
+            libraries = pip_data["packages"]
+        elif isinstance(pip_data, list):
+            libraries = pip_data
         else:
-            socketio.emit("console_output", f"\n(Ввод вне запроса: {data})\n", room=sid)
+            logger.error(f"Некорректный формат данных от pip list: {type(pip_data)}")
+            return jsonify(
+                {"error": f"Некорректный формат данных от pip list: {type(pip_data)}"}
+            ), 500
+
+        # Формируем список сторонних библиотек
+        formatted_libraries = []
+        for lib in libraries:
+            if isinstance(lib, dict) and "name" in lib and "version" in lib:
+                if (
+                    lib["name"] not in STANDARD_LIBRARIES
+                    and lib["name"] not in SYSTEM_LIBRARIES
+                ):
+                    formatted_libraries.append(
+                        {"name": lib["name"], "version": lib["version"]}
+                    )
+            else:
+                logger.warning(f"Пропущена библиотека с некорректными данными: {lib}")
+
+        # Сортируем по имени
+        formatted_libraries.sort(key=lambda x: x["name"])
+        return jsonify(formatted_libraries)
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Ошибка выполнения pip list: {e.stderr}")
+        return jsonify({"error": f"Ошибка выполнения pip list: {e.stderr}"}), 500
+    except json.JSONDecodeError as e:
+        logger.error(f"Ошибка декодирования JSON: {str(e)}")
+        return jsonify({"error": f"Ошибка декодирования JSON: {str(e)}"}), 500
+    except Exception as e:
+        logger.error(f"Ошибка получения библиотек: {str(e)}")
+        return jsonify({"error": f"Ошибка получения библиотек: {str(e)}"}), 500
+
+
+@blueprint.route("/presets", methods=["GET"])
+@login_required
+def get_presets():
+    """Возвращает список пресетов пользователя."""
+    user_id = current_user.id
+    presets_dir = os.path.join(USER_FILES_PATH, "presets", str(user_id))
+    os.makedirs(presets_dir, exist_ok=True)
+    logger.debug(f"Чтение пресетов из {presets_dir}")
+    presets = []
+    for preset_file in os.listdir(presets_dir):
+        if preset_file.endswith(".json"):
+            preset_name = preset_file[:-5]
+            preset_path = os.path.join(presets_dir, preset_file)
+            try:
+                with open(preset_path, "r", encoding="utf-8") as f:
+                    preset_data = json.load(f)
+                presets.append(
+                    {
+                        "name": preset_name,
+                        "libraries": preset_data.get("libraries", []),
+                        "python_version": preset_data.get("python_version", "3.12"),
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Ошибка чтения пресета {preset_name}: {str(e)}")
+                continue
+    return jsonify(presets)
+
+
+@blueprint.route("/create_preset", methods=["POST"])
+@login_required
+def create_preset():
+    """Создает или обновляет пресет с указанными библиотеками и версией Python."""
+    data = request.get_json()
+    preset_name = data.get("name")
+    libraries = data.get("libraries", [])
+    python_version = data.get("python_version", "3.12")
+    user_id = current_user.id
+    presets_dir = os.path.join(USER_FILES_PATH, "presets", str(user_id))
+    preset_path = os.path.join(presets_dir, f"{preset_name}.json")
+
+    # Валидация имени пресета
+    if not preset_name or not preset_name.replace(" ", "").isalnum():
+        logger.error(f"Недопустимое имя пресета: {preset_name}")
+        return jsonify(
+            {"error": "Имя пресета должно содержать только буквы, цифры и пробелы"}
+        ), 400
+
+    # Проверяем, что библиотеки существуют в указанном интерпретаторе
+    version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python3"}
+    python_executable = shutil.which(version_map.get(python_version, "python3"))
+    if not python_executable:
+        logger.error(
+            f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
+        )
+        return jsonify(
+            {
+                "error": f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
+            }
+        ), 404
+
+    try:
+        result = subprocess.run(
+            [python_executable, "-m", "pip", "list", "--format=json"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True,
+        )
+        pip_data = json.loads(result.stdout)
+        if isinstance(pip_data, dict) and "packages" in pip_data:
+            installed_libraries = {lib["name"] for lib in pip_data["packages"]}
+        elif isinstance(pip_data, list):
+            installed_libraries = {lib["name"] for lib in pip_data}
+        else:
+            logger.error(
+                f"Некорректный формат данных от pip list в create_preset: {type(pip_data)}"
+            )
+            return jsonify({"error": "Некорректный формат данных от pip list"}), 500
+
+        # Добавляем стандартные и системные библиотеки в список допустимых
+        installed_libraries.update(STANDARD_LIBRARIES)
+        installed_libraries.update(SYSTEM_LIBRARIES)
+        invalid_libraries = [lib for lib in libraries if lib not in installed_libraries]
+        if invalid_libraries:
+            logger.error(f"Библиотеки не найдены: {', '.join(invalid_libraries)}")
+            return jsonify(
+                {"error": f"Библиотеки не найдены: {', '.join(invalid_libraries)}"}
+            ), 400
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Ошибка проверки библиотек: {e.stderr}")
+        return jsonify({"error": f"Ошибка проверки библиотек: {e.stderr}"}), 500
+    except Exception as e:
+        logger.error(f"Ошибка проверки библиотек: {str(e)}")
+        return jsonify({"error": f"Ошибка проверки библиотек: {str(e)}"}), 500
+
+    # Автоматически добавляем стандартные и системные библиотеки
+    libraries = list(set(libraries).union(STANDARD_LIBRARIES, SYSTEM_LIBRARIES))
+
+    try:
+        os.makedirs(presets_dir, exist_ok=True)
+        logger.debug(f"Сохранение пресета в {preset_path}")
+        with open(preset_path, "w", encoding="utf-8") as f:
+            json.dump({"libraries": libraries, "python_version": python_version}, f)
+        return jsonify({"message": f"Пресет '{preset_name}' сохранен"})
+    except Exception as e:
+        logger.error(f"Ошибка сохранения пресета: {str(e)}")
+        return jsonify({"error": f"Ошибка сохранения пресета: {str(e)}"}), 500
+
+
+@blueprint.route("/delete_preset/<preset_name>", methods=["DELETE"])
+@login_required
+def delete_preset(preset_name):
+    """Удаляет пресет."""
+    user_id = current_user.id
+    preset_path = os.path.join(
+        USER_FILES_PATH, "presets", str(user_id), f"{preset_name}.json"
+    )
+    if not os.path.exists(preset_path):
+        logger.error(f"Пресет '{preset_name}' не найден по пути {preset_path}")
+        return jsonify({"error": f"Пресет '{preset_name}' не найден"}), 404
+    try:
+        os.remove(preset_path)
+        logger.debug(f"Пресет '{preset_name}' удален")
+        return jsonify({"message": f"Пресет '{preset_name}' удален"})
+    except Exception as e:
+        logger.error(f"Ошибка удаления пресета: {str(e)}")
+        return jsonify({"error": f"Ошибка удаления пресета: {str(e)}"}), 500
+
+
+@blueprint.route("/save_code", methods=["POST"])
+@login_required
+def save_code():
+    """Сохраняет код в файл."""
+    data = request.get_json()
+    code = data.get("code")
+    file_path = data.get("file_path")
+    user_id = current_user.id
+    full_path = os.path.join(USER_FILES_PATH, str(user_id), file_path)
+    try:
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        with open(full_path, "w", encoding="utf-8") as f:
+            f.write(code)
+        logger.debug(f"Код сохранен в {full_path}")
+        return jsonify({"message": "Код сохранен"})
+    except Exception as e:
+        logger.error(f"Ошибка сохранения кода: {str(e)}")
+        return jsonify({"error": f"Ошибка сохранения кода: {str(e)}"}), 500

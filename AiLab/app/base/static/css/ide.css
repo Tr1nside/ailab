@@ -1,149 +1,213 @@
-/* Общие стили */
+:root {
+    --background: #fff;
+    --color: #424242;
+    --button-background: #d3d3d3;
+    --button-background-hover: #c0bfbf;
+    --button-background-active: #858585;
+    --border: #ddd;
+    --tab: #f0f0f0;
+    --tab-hover: #c0c0c0;
+    --white: white;
+    --console-back: #f5f5f5;
 
+}
+
+.dark-mode {
+    --background: #222222;
+    --color: white;
+    --button-background: #2a2a2a;
+    --button-background-hover: #1e1e1eec;
+    --button-background-active: #191919ec;
+    --border: #373737;
+    --tab: #333333;
+    --tab-hover: #282828;
+    --white: #222;
+    --console-back: #2a2a2a;
+}
+
+/* Общие стили */
+div{
+    color: var(--color);
+    user-select: none;
+}
+h3{
+    color: var(--color);
+}
+option{
+    color: var(--color);
+}
+select{
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    color: var(--color);
+}
 body {
     font-family: sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #f9f9f9;
-    transition: background-color 0.3s, color 0.3s;
+    background-color: var(--background);
+    height: 100vh;
+    overflow: hidden;
 }
 
-/* Темный режим */
 
-
-body.dark-mode .container {
-    background-color: #333;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+.toolbar{
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    /* margin-top: 1vh; */
+    padding: 1vh 0vw;
+    height: fit-content;
+}
+.toolbarpart1{
+    width: 5vh;
+    height: 5vh;
+    border: none;
+    margin-right: 1vw;
+    border-radius: 0.5vw;
+    padding: 0;
+    justify-content: center center;
+    background-color: var(--button-background);
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
 }
 
-body.dark-mode .CodeMirror {
-    background-color: #444;
-    color: #fff;
+.toolbarpart1 img{
+    width: 4vh;
+    height: 4vh;
+    margin-top: 0.6vh;
+    margin-bottom: 10px;
+}
+.toolbarpart2{
+    width: 5vh;
+    height: 5vh;
+    border: none;
+    margin-left: 1vw;
+    border-radius: 0.5vw;
+    padding: 0;
+    justify-content: center center;
+    background-color: var(--button-background);
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    
+    
 }
 
-body.dark-mode .CodeMirror-gutters {
-    background-color: #333;
-    border-right-color: #555;
+.toolbarpart1:hover{
+    background-color: var(--button-background-hover);
+    width: 5vh;
+    height: 5vh;
+    border: none;
+    margin-right: 1vw;
+    border-radius: 0.5vw;
+    padding: 0;
+    justify-content: center center;
+}
+.toolbarpart2:hover{
+
+    background-color: var(--button-background-hover);
+    width: 5vh;
+    height: 5vh;
+    border: none;
+    margin-left: 1vw;
+    border-radius: 0.5vw;
+    padding: 0;
+    justify-content: center center;
 }
 
-body.dark-mode .CodeMirror-linenumber {
-    color: #999;
+.toolbarpart1:active{
+    width: 5vh;
+    height: 5vh;
+    border: none;
+    margin-right: 1vw;
+    border-radius: 0.5vw;
+    padding: 0;
+    justify-content: center center;
+    background-color: var(--button-background-active);
 }
-
-body.dark-mode .editor-header {
-    background-color: #444;
-    border-bottom-color: #555;
+.toolbarpart2:active{
+    background-color: var(--button-background-active);
+    width: 5vh;
+    height: 5vh;
+    border: none;
+    margin-left: 1vw;
+    border-radius: 0.5vw;
+    padding: 0;
+    justify-content: center center;
+    
 }
-
-body.dark-mode .console {
-    background-color: #444;
-    color: #fff;
-    border-color: #555;
-}
-
-body.dark-mode .console-output {
-    background-color: #444;
-    color: #fff;
-    border-color: #555;
-}
-
-body.dark-mode .console-input {
-    background-color: #444;
-    color: #fff;
-    border-color: #555;
-}
-body.dark-mode .console-input-active {
-    background-color: #595e4e;
-    color: #fff;
-    border-color: #555;
-}
-
-body.dark-mode .tabs {
-    background-color: #333;
-    color: #fff;
-    border-color: #555;
-}
-
-body.dark-mode .tab {
-    background-color: #444;
-    color: #fff;
-    border-color: #8a8a8a;
-}
-
-body.dark-mode .tab:hover {
-    background-color: #7a7a7a;
-    color: #fff;
-    border-color: #8a8a8a;
-}
-
-body.dark-mode .tab.active {
-    background-color: #a5a5a5;
-    color: #fff;
-    border-color: #8a8a8a;
-}
-
-body.dark-mode .tab.active:hover {
-    background-color: #a5a5a5;
-    color: #fff;
-    border-color: #8a8a8a;
+.toolbarpart2 img{
+    width: 4vh;
+    height: 4vh;
+    margin-top: 0.6vh;
+    margin-bottom: 10px;
 }
 
 /* Контейнер */
 
 .container {
-    width: 80%;
-    margin: 20px auto;
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    width: 100%;
+    background-color: var(--background); 
+    height: auto;
+    max-height: 100vh;
+    display: flex;
+    justify-content: center;
 }
 
 /* Вкладки */
 
-#create_tab {
-    min-width: 15px;
-}
-
 .tabs {
+    position: relative;
+    width: auto;
+    padding-inline: 1px;
     display: flex;
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    overflow-x:auto;
+    overflow-y: hidden;
+    background-color: var(--white); 
+    border-top-right-radius: 0.5vw;
+    border-top-left-radius: 0.5vw;
+    font-size: 1vw;
 }
 
 .tab {
-    padding: 10px 15px;
+    padding: 0.5vw 0.75vw;
+    padding-right: 2vw;
     cursor: pointer;
     border: none;
-    background-color: #f0f0f0;
-    border-radius: 5px 5px 0 0;
-    margin-right: 5px;
+    background-color: var(--tab);
+    border-radius: 0.3vw 0.3vw 0 0;
+    margin-right: 0.5vw;
     border-bottom: none;
     transition: background-color 0.3s;
     position: relative;
-    min-width: 100px;
+    width: auto;
+    height: 1.1vw;
     /* Задаем минимальную ширину */
     user-select: none;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
 }
-
+.tab span{
+    font-size: 1vw;
+}
 .tab.active {
-    background-color: #c0c0c0;
+    background-color: var(--tab-hover);
     border-bottom: none;
 }
 
 .tab.active:hover {
-    background-color: #c0c0c0;
+    background-color: var(--tab-hover);
     border-bottom: none;
 }
 
 .tab:hover {
-    background-color: #ddd;
+    background-color: var(--border);
 }
 
 .close-tab {
     position: absolute;
-    top: 5px;
-    right: 5px;
+    top: 0.4vh;
+    right: 0.4vw;
     cursor: pointer;
     color: #888;
     font-size: 12px;
@@ -156,19 +220,26 @@ body.dark-mode .tab.active:hover {
 /* CodeMirror */
 
 .CodeMirror {
-    border: 1px solid #ddd;
+    border: 0;
     /* Добавляем рамку */
-    border-radius: 5px;
+    border-bottom-left-radius: 0.5vw;
+    border-bottom-right-radius: 0.5vw;
     /* Закругляем углы */
     outline: none;
     font-family: monospace;
-    font-size: 20px;
-    line-height: 1.3;
-    height: 300px;
+    font-size: 18px;
+    line-height: 20px;
+    height: 38.5vh;
     /* Уменьшаем высоту */
     width: 100%;
     box-sizing: border-box;
+    transition: 0.5s;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
     /* Важно, чтобы padding учитывался в общей ширине */
+}
+
+.console-close {
+    height: 68.5vh;
 }
 
 .CodeMirror-scroll {
@@ -180,7 +251,7 @@ body.dark-mode .tab.active:hover {
 
 .CodeMirror-gutters {
     background-color: #eee;
-    border-right: 1px solid #ddd;
+    border-right: 1px solid var(--border);
     height: 100%;
     /* Растягиваем на всю высоту родителя */
 }
@@ -189,27 +260,13 @@ body.dark-mode .tab.active:hover {
     color: #777;
 }
 
-/* Панель инструментов */
-
-.toolbar {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-    /* Отступ от CodeMirror */
-    margin-bottom: 10px;
-}
-
-.toolbar-left,
-.toolbar-right {
-    display: flex;
-}
 
 .button {
     padding: 5px 10px;
     border: none;
     border-radius: 5px;
     margin-right: 5px;
-    color: white;
+    color: var(--white);
     cursor: pointer;
     font-size: 16px;
     transition: background-color 0.3s;
@@ -225,128 +282,94 @@ body.dark-mode .tab.active:hover {
 /* Консоль */
 
 .console {
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 10px;
-    background-color: #f5f5f5;
-    height: 200px;
+    border: 1px solid var(--border);
+    border-radius: 0.5vw;
+    padding: 0.8vw;
+    background-color: var(--console-back);
+    height: 25vh;
     /* Уменьшаем высоту */
     overflow-y: hidden;
+    position: relative;
+    display: normal;
+    white-space: normal;
+    transition: 0.5s;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+.close {
+    height: 0px;
+    padding: 0px 0px 0px 0px;
+    border: 0;
 }
 
 .console-label {
     font-weight: bold;
-    margin-bottom: 5px;
+
 }
 
 .console-output {
-    height: 65%;
+    height: 15vh;
     width: 100%;
     resize: none;
     border: none;
     outline: none;
     font-family: monospace;
     font-size: 14px;
-    line-height: 20px;
     overflow: auto;
-    padding: 10px;
+    padding: 2vw;
     box-sizing: border-box;
-    white-space: pre-wrap;
-    background-color: #f5f5f5;
+    background-color: var(--console-back);
+    overflow-y: auto;
+    font-size: 1vw;
+    color: var(--color);
 }
 
 .console-input {
-    height: 21%;
+    height: 5vh;
     width: 100%;
     resize: none;
     border: none;
     outline: none;
     font-family: monospace;
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 2vh;
+    line-height: 0.5vh;
     overflow: auto;
-    padding: 10px;
+    padding-left: 1vw;
+    padding-top: 1.2vh;
+    padding-bottom: 2.2vh;
     box-sizing: border-box;
     white-space: pre-wrap;
-    background-color: #f5f5f5;
-    border-radius: 10px;
+    background-color: var(--console-back);
+    border-radius: 0.5vw;
+    overflow: hidden;
+    margin-top: 0.3vh;
 }
 
 .console-input-active {
     background-color: #c8e7c9c4;
-    border-radius: 10px;
+    border-radius: 1vw;
 }
 
 
-
-/* Цвета для кнопок */
-
-.run-button {
-    background-color: #27ae60;
-}
-
-.save-button {
-    background-color: #3498db;
-}
-
-.open-button {
-    background-color: #e74c3c;
-}
-
-.download-button {
-    background-color: #f39c12;
-}
-
-.text-button {
-    background-color: #f39c12;
-}
-
-.delete-button {
-    background-color: #f39c12;
-}
-
-.run-button:hover {
-    background-color: #2ecc71;
-}
-
-.save-button:hover {
-    background-color: #5dade2;
-}
-
-.open-button:hover {
-    background-color: #e74c3c;
-}
-
-.download-button:hover {
-    background-color: #f1c40f;
-}
-
-.text-button:hover {
-    background-color: #f1c40f;
-}
-
-.delete-button:hover {
-    background-color: #f1c40f;
-}
 
 /* Стили для режима редактирования вкладок */
 .tab-input {
-    position: absolute;
+    position: relative;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    padding: 10px 15px;
     margin: 0;
     border: none;
-    background-color: white;
-    border-radius: 5px 5px 0 0;
+    background-color: rgb(255, 255, 255);
     font-size: inherit;
     font-family: inherit;
     display: none;
     box-sizing: border-box;
-    min-width: 100px;
-    /* Чтобы input тоже не становился слишком узким */
+    padding: 0.5vw 0.75vw;
+    border-radius: 0.3vw 0.3vw 0 0;
+    border-bottom: none;
+    padding-top: 1vw;
+    width: 25vw;
+    height: 1.1vw;
 }
 
 .tab-input:focus {
@@ -366,31 +389,433 @@ body.dark-mode .tab.active:hover {
     padding: 0;
 }
 
-.button-icons{
-    width: 30px;
-    height: 30px;
-    margin-top: 5px;
-    margin-left: 5px;
+
+.opt-ver-menu{
+    position: absolute;
+    background-color: var(--white);
+    z-index: 10000;
+    width: 100%;
+    height: 98vh;
+    top: 0;
+    left: 0;
+}
+.opt-ver-menu-triger{
+    border-radius: 0.3vw;
+    border: none;
+    width: 8vw;
+    height: 5vh;
+    padding: 0.2vw;
+    font-size: 1vw;
+    position: relative;
+    white-space: nowrap;
+    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.3);
+    color: var(--color);
+    background-color: var(--button-background);
+
 }
 
-/* Окно автодополнения */
-.CodeMirror-hints {
-    background: #282a36; /* Цвет фона (например, темный Dracula) */
-    border: 1px solid #44475a; /* Граница */
-    font-family: Consolas, Monaco, monospace;
-    font-size: 14px;
-    border-radius: 5px;
-    padding: 5px;
+.opt-ver-menu-triger-reverse{
+    margin: 1vw;
+    width: 3vw;
+    height: 3vw;
+    border-radius: 1vw;
+    border: 0;
+    position: absolute;
+    z-index: 4;
+    display: flex;
+    white-space: nowrap;
+    justify-content: center;
+    margin-top: 16vh;
+    /* padding-top: 0.5vw; */
+    padding-inline: 0vw;
+    font-size: 5vh;
+    align-items: center;
 }
 
-/* НЕ выбранный текст (обычные элементы) */
-.CodeMirror-hint {
-    color: #aaaaad; /* Белый цвет текста */
-    padding: 5px;
+.opt-ver-menu-triger-reverse:hover{
+    background-color: #cecece;
+}
+.opt-ver-menu-triger-reverse:active{
+    background-color: #aeaeae;
+}
+.opt-ver-menu-triger-reverse img{
+    margin-top: 0.5vw;
+    margin-bottom: 0.5vw;
+    width: 1vw;
+    height: 1vw;
+    
 }
 
-/* ВЫБРАННЫЙ элемент */
-.CodeMirror-hint-active {
-    background: #44475a !important; /* Цвет фона при выборе */
-    color: #50fa7b !important; /* Зелёный текст */
+
+.part1-el-item{
+    width:20vw;
+    background-color: --background;
+    border-radius: 0.5vw;
+    margin: 0.3em;
+    font-size: auto;
+    height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-right: 1vw;
+    margin-left: 1vw;
+    margin-top: 1.25vw;
+    transition: 0.5s;
+}
+.part1-el-item h3{
+    margin: 1vw;
+    font-size: 1vw;
+    white-space: nowrap;
+}
+.part2-el{
+    margin-top: 2vw;
+    width: 96vw;  /* 56vw - начальный размер */
+    border-top-right-radius: 0.5vw;
+    border-top-left-radius: 0.5vw;
+    height: 80vh;
+    transition: 0.5s;
+    margin-left: 2vw;
+    margin-right: 2vw;
+    
+}
+
+.open-filetree{
+    margin-left: 26vw;
+}
+
+.open-messenger{
+    margin-right: 26vw; 
+}
+
+.part3-el-item{
+    width:0vw;
+    background-color: --background;
+    border-radius: 0.5vw;
+    margin: 0.3em;
+    font-size: auto;
+    height: 80vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin-left: 1vw;
+    margin-right: 1vw;
+    margin-top: 1.25vw;
+    transition: 0.5s;
+}
+.part3-el-item h3{
+    margin: 1vw;
+    font-size: 1vw;
+}
+
+.toolbar{
+    height: 1vh;
+}
+.lang-ver-menu{
+    white-space: nowrap;
+    display: flex;
+    background-color: #8d8d8d;
+    width: 100%;
+    height: 100vh;
+    justify-content:center;
+    
+}
+.lang-ver-menu-item{
+    background-color: --background;
+    width: 70vw;
+    height: 76vh;
+    position: relative;
+    border-radius: 1vw;
+    margin-top: 16vh;
+}
+
+.languages{
+    width: 8vw;
+    font-size: 1vw;
+    font-weight: 700;
+    border-radius: 10px;
+    user-select: none;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding-top: 0.4vw;
+    padding-left: 1.5vw;
+    padding-right: 1vw;
+    margin-left: 1vw;
+    border: none;
+    background-color: #cecece00;
+}
+
+
+.languages-container{
+    display: flex;
+}
+.version-container{
+    display: flex;
+}
+.languages option{
+    border-radius: 0.5vw;
+    font-size: 1vw;
+    width: fit-content;
+    padding-inline: 0.5vw;
+    
+}
+
+.version-download{
+    width: 8vw;
+    font-size: 1vw;
+    font-weight: 700;
+    border-radius: 10px;
+    user-select: none;
+    overflow-y: auto;
+    overflow-x: auto;
+    padding-top: 0.4vw;
+    padding-left: 1.5vw;
+    padding-right: 1vw;
+    margin-left: 16vw;
+    border: none;
+    background-color: rgba(255, 255, 255, 0);
+    
+}
+
+.version-download option{
+    border-radius: 0.5vw;
+    font-size: 1vw;
+    width: fit-content;
+    padding-inline: 0.5vw;
+}
+
+.manager_of_files{
+    margin-left: 0.5vw;
+    width: 19vw;
+    height: 60vh;
+    font-size: 1vw;
+    border: none;
+    overflow-y: auto;
+    padding-top: 0.2vh;
+    display: block;
+    outline: none;
+}
+
+.manager_of_files option{
+    width: 17vw;
+    padding: 0.15vw;
+    margin-left: 0.5vw;
+    margin-right: 1vw;
+    border-radius: 0.5vw;
+    margin-bottom: 0.5vh;
+    padding-left: 0.8vw;
+}
+
+.manager_of_files option:checked{
+    color: var(--white);
+}
+
+.logo-header{
+    width: 2vw;
+    height: 2vw;
+    padding: 0.1vw;
+    background-color: #000000;
+    border-radius: 0.5vw;
+    margin-right: 1vw;
+}
+
+
+.names-settings{
+    background-color: #cecece;
+    width: 50vw;
+    height: 10vh;
+    border-radius: 1vw;
+    margin-top: 3vh;
+    margin-left: 2vw;
+    display: flex;
+    font-size: 1.25vw;
+    color: var(--color);
+}
+.names-settings h3{
+    margin-left: 2vw;
+}
+
+.settings-options{
+    background-color: #cecece;
+    width: 50vw;
+    height: 58vh;
+    border-radius: 1vw;
+    margin-left: 2vw;
+    margin-top: 2vh;
+    padding: 0.1px;
+}
+
+.settings-options h3{
+    margin-left: 1vw;
+    margin-top: 1vw;
+    font-size: 1vw;
+    user-select: none;
+}
+
+.settings-sets{
+    background-color: #cecece;
+    width: 15vw;
+    height: 70vh;
+    border-radius: 1vw;
+    margin-top: 3vh;
+    margin-left: 2vh;
+    margin-right: 2vw;
+    font-size: 1.25vw;
+}
+
+.settings-container{
+    display: flex;
+    justify-content: space-between;
+}
+
+.title-sets{
+    margin-top: 1.5vh;
+    margin-left: 1vw;
+}
+.title-sets button{
+    padding: 0;
+    width: 2vw;
+    height: 2vw;
+    font-size: 1vw;
+    border: none;
+    border-radius: 0.4vw;
+    margin-left: 0.3vw;
+    top: -0.5vh;
+    position: relative;
+    background-color: --background;
+}
+.title-sets button:hover{
+    background-color: #ececec;
+}
+.title-sets button:active{
+    background-color: #acacac;
+}
+
+.sets{
+    height: 61vh;
+    width: 13.8vw;
+    user-select: none;
+    overflow-y: auto;
+    margin-left: 0.6vw;
+    margin-right: 0.6vw;
+    border: none;
+    background-color: --background;
+    outline: 0;
+    border-radius: 1vw;
+    font-size: 1vw;
+    padding-top: 1vw;
+}
+
+.sets div{
+    border-radius: 0.5vw;
+    font-size: 1vw;
+    width: fit-content;
+    padding-inline: 0.5vw;
+    margin-left: 1vw;
+    width: 10vw;
+}
+
+.sets div:hover{
+    background-color: #8a8a8a;
+    color: var(--white);
+}
+.sets div:active{
+    background-color: #666666;
+    color: var(--white);
+}
+
+.libraries{
+    border-radius: 1vw;
+    overflow: auto;
+    overflow-x: hidden;
+    padding: 0.4vw;
+    width: 48.4vw;
+    height: 48.8vh;
+    border: weight 1px;
+    border-color: #cecece;
+    outline: 0;
+    margin-left: 0.4vw;
+    margin-right: 0.4vw;
+    font-size: 1vw;
+    
+}
+
+.libraries div{
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    border-radius: 0.5vw;
+}
+
+.labels-of-elements-libraries{
+     width: 46vw !important;
+     margin-left: 1.2vw;
+     display: flex;
+     justify-content: center;
+     align-content: center;
+     border-radius: 0.5vw;
+}
+
+.libraries div:hover{
+    display: flex;
+    justify-content: center;
+    align-content: center;
+    background-color: #0c68b3;
+    color: var(--white);
+}
+
+.libraries div:active{
+    background-color: #003663;
+    color: var(--white);
+}
+
+.libraries div:active:after{
+    background-color: #0c68b3;
+    color: var(--white);
+}
+
+.libraries span{
+    width: 20vw;
+    text-align-last: center;
+}
+.libraries option{
+    display: flex;
+
+}
+
+.libraries a{
+    position: absolute;
+    display: flex;
+    left: 3.5vw;
+}
+
+.sets div{
+    justify-content: center;
+    align-content: center;
+    border-radius: 0.5vw;
+    margin-inline: 1vw;
+}
+.sets option:checked{
+    color: var(--white);
+}
+
+.lib_element {
+    margin: 1vw;
+    padding: 0.5vw;
+    border: 1px solid #ccc;
+    cursor: pointer;
+}
+.checked::before {
+    content: "✓";
+    color: green;
+    width: 0;
+    height: 0;
+    position: relative;
+    top: -0.3vh;
+}
+
+.set.active{
+    color: var(--white);
+    background-color: #aaaaaa;
+    
+}
+.libraries.active{
+    background-color: var(--white) !important;
 }

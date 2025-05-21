@@ -17,7 +17,7 @@ socketio = SocketIO(cors_allowed_origins="*", engineio_logger=True, logger=True)
 
 def _register_socketio(app):
     """Инициализация SocketIO"""
-    from app.ide.routes import register_socketio_events
+    from app.ide.socketio_events import register_socketio_events
 
     socketio.init_app(app)
     register_socketio_events(socketio)

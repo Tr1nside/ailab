@@ -31,6 +31,292 @@ const pythonKeywords = [
 
 let saveInterval = null;
 
+// 🔹 Управление меню opt-ver-menu
+const optvermenu = document.querySelector('.opt-ver-menu');
+const container = document.querySelector('.container');
+optvermenu.hidden = true;
+const optvermenutriger = document.querySelector('.opt-ver-menu-triger');
+const optvermenutrigerreverse = document.querySelector('.opt-ver-menu-triger-reverse');
+
+optvermenutriger.addEventListener("click", function() {
+    container.hidden = true;
+    document.querySelector(".console").hidden = true;
+    optvermenu.hidden = false;
+    
+});
+
+optvermenutrigerreverse.addEventListener("click", function() {
+    optvermenu.hidden = true;
+    container.hidden = false;
+    document.querySelector(".console").hidden = false;
+});
+
+let setcounter = 1;
+let currentSet = 'set1';
+let currentPythonVersion = document.querySelector('.version-download').value || '3.12';
+const setsData = {
+    'set1': { libraries: [], python_version: '3.12' }
+};
+let libraries_massive = [];
+
+function toggleCheck(element) {
+    element.classList.toggle('checked');
+    const libraryName = element.querySelector('span:first-child').textContent.trim();
+    const index = setsData[currentSet].libraries.indexOf(libraryName);
+    
+    if (element.classList.contains('checked')) {
+        if (index === -1) {
+            setsData[currentSet].libraries.push(libraryName);
+        }
+    } else {
+        if (index !== -1) {
+            setsData[currentSet].libraries.splice(index, 1);
+        }
+    }
+    savePreset(currentSet, setsData[currentSet].libraries, setsData[currentSet].python_version);
+}
+
+function selectSet(element) {
+    document.querySelectorAll('.set').forEach(set => {
+        set.classList.remove('active');
+    });
+    element.classList.add('active');
+    currentSet = element.querySelector('span').textContent.trim();
+    const setId = element.id;
+    document.querySelectorAll(".libraries").forEach(libs => { libs.classList.remove('active'); });
+    libraries_massive[setId - 1].classList.add("active");
+    hideAllExcept();
+    updateLibraryCheckboxes();
+}
+
+function addSet() {
+    setcounter += 1;
+    const setName = `set${setcounter}`;
+    setsData[setName] = { libraries: [], python_version: currentPythonVersion };
+    
+    const newSet = document.createElement('div');
+    newSet.className = 'set';
+    newSet.insertAdjacentHTML('afterbegin', `<span>${setName}</span>`);
+    newSet.setAttribute("ondblclick", "editSetName(this)");
+    newSet.setAttribute("id", setcounter);
+    document.querySelectorAll('.set').forEach(set => {
+        set.classList.remove('active');
+    });
+    newSet.classList.add("active");
+    newSet.onclick = function() { selectSet(this); };
+    document.getElementById('sets-list').appendChild(newSet);
+    
+    create_new_group();
+    hideAllExcept();
+    currentSet = setName;
+    savePreset(setName, [], currentPythonVersion);
+}
+
+function deleteSelectedSet() {
+    if (document.querySelector(".sets").childElementCount > 1) {
+        const selectedSet = document.querySelector('.set.active');
+        const setName = selectedSet.querySelector('span').textContent.trim();
+        selectedSet.remove();
+        document.querySelector(".libraries.active").remove();
+        libraries_massive = libraries_massive.filter((_, index) => index !== parseInt(selectedSet.id) - 1);
+        fetch(`/delete_preset/${encodeURIComponent(setName)}`, {
+            method: 'DELETE'
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showNotification(data.error);
+                } else {
+                    delete setsData[setName];
+                    showNotification(`Пресет '${setName}' удален`);
+                }
+            })
+            .catch(error => {
+                showNotification(`Ошибка удаления пресета: ${error}`);
+            });
+    }
+    if (document.querySelector(".set")) {
+        const elcol = document.querySelectorAll('.set');
+        const last_el = elcol[elcol.length - 1];
+        last_el.classList.add("active");
+        const last_el_id = last_el.id;
+        libraries_massive[last_el_id - 1].classList.add("active");
+        currentSet = last_el.querySelector('span').textContent.trim();
+        hideAllExcept();
+        updateLibraryCheckboxes();
+    }
+}
+
+document.addEventListener('keydown', function(event) {
+    if (event.code == 'Delete') {
+        deleteSelectedSet();
+    }
+});
+
+function editSetName(element) {
+    const span = element.querySelector('span');
+    if (!span) return;
+
+    const oldName = span.textContent;
+    const input = document.createElement('input');
+    input.setAttribute("maxlength", "15");
+    input.type = 'text';
+    input.value = span.textContent;
+    input.style.width = `9vw`;
+    input.style.height = `2vh`;
+    
+    span.replaceWith(input);
+    input.focus();
+
+    function saveChanges() {
+        const newName = input.value.trim() || oldName;
+        const newSpan = document.createElement('span');
+        newSpan.textContent = newName;
+        input.replaceWith(newSpan);
+        if (newName !== oldName) {
+            fetch(`/delete_preset/${encodeURIComponent(oldName)}`, { method: 'DELETE' })
+                .then(() => {
+                    setsData[newName] = setsData[oldName];
+                    delete setsData[oldName];
+                    currentSet = newName;
+                    savePreset(newName, setsData[newName].libraries, setsData[newName].python_version);
+                });
+        }
+        input.removeEventListener('keydown', handleEnter);
+        input.removeEventListener('blur', saveChanges);
+    }
+
+    function handleEnter(e) {
+        if (e.key == 'Enter') {
+            saveChanges();
+        }
+    }
+    input.addEventListener('keydown', handleEnter);
+    input.addEventListener('blur', saveChanges);
+}
+
+function hideAllExcept() {
+    const elementsToHide = document.querySelectorAll(`.libraries:not(.active)`);
+    elementsToHide.forEach(element => {
+        element.style.display = 'none';
+    });
+    const elementsToShow = document.querySelectorAll(`.libraries.active`);
+    elementsToShow.forEach(element => {
+        element.style.display = 'block';
+    });
+}
+
+function create_new_group() {
+    const libraries_new = document.createElement('div');
+    document.querySelectorAll(".libraries").forEach(libs => { libs.classList.remove('active'); });
+    libraries_new.classList.add("libraries", "active");
+    libraries_new.innerHTML = `
+        <span class="labels-of-elements-libraries"><span>Библиотека</span><span>Версия</span><span>Последняя версия</span></span>
+    `;
+    fetch(`/libraries/${currentPythonVersion}`)
+        .then(response => response.json())
+        .then(libraries => {
+            if (libraries.error) {
+                showNotification(libraries.error);
+                return;
+            }
+            libraries.forEach(lib => {
+                const libElement = document.createElement('div');
+                libElement.className = 'lib_element';
+                libElement.setAttribute('ondblclick', 'toggleCheck(this)');
+                libElement.innerHTML = `<span>${lib.name}</span><span>${lib.version}</span><span>${lib.version}</span>`;
+                libraries_new.appendChild(libElement);
+            });
+            updateLibraryCheckboxes();
+        })
+        .catch(error => {
+            showNotification(`Ошибка загрузки библиотек: ${error}`);
+        });
+    document.querySelector('.settings-options').appendChild(libraries_new);
+    libraries_massive.push(libraries_new);
+}
+
+function loadPresets() {
+    fetch('/presets')
+        .then(response => response.json())
+        .then(presets => {
+            setcounter = 0;
+            document.getElementById('sets-list').innerHTML = '';
+            libraries_massive = [];
+            document.querySelectorAll('.libraries').forEach(lib => lib.remove());
+            Object.keys(setsData).forEach(setName => delete setsData[setName]);
+
+            presets.forEach((preset, index) => {
+                if (preset.python_version === currentPythonVersion) {
+                    setcounter += 1;
+                    const setName = preset.name;
+                    setsData[setName] = { libraries: preset.libraries, python_version: preset.python_version };
+
+                    const newSet = document.createElement('div');
+                    newSet.className = `set${index === 0 ? ' active' : ''}`;
+                    newSet.id = setcounter;
+                    newSet.innerHTML = `<span>${setName}</span>`;
+                    newSet.setAttribute("ondblclick", "editSetName(this)");
+                    newSet.onclick = function() { selectSet(this); };
+                    document.getElementById('sets-list').appendChild(newSet);
+
+                    create_new_group();
+                    if (index === 0) {
+                        currentSet = setName;
+                        updateLibraryCheckboxes();
+                    }
+                }
+            });
+            hideAllExcept();
+            if (setcounter === 0) {
+                addSet();
+            }
+        })
+        .catch(error => {
+            showNotification(`Ошибка загрузки пресетов: ${error}`);
+        });
+}
+
+function savePreset(name, libraries, python_version) {
+    fetch('/create_preset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, libraries, python_version })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showNotification(data.error);
+            } else {
+                showNotification(`Пресет '${name}' сохранен`);
+            }
+        })
+        .catch(error => {
+            showNotification(`Ошибка сохранения пресета: ${error}`);
+        });
+}
+
+function updateLibraryCheckboxes() {
+    const activeLibraryDiv = document.querySelector('.libraries.active');
+    if (!activeLibraryDiv) return;
+    const libElements = activeLibraryDiv.querySelectorAll('.lib_element');
+    libElements.forEach(element => {
+        const libraryName = element.querySelector('span:first-child').textContent.trim();
+        if (setsData[currentSet].libraries.includes(libraryName)) {
+            element.classList.add('checked');
+        } else {
+            element.classList.remove('checked');
+        }
+    });
+}
+
+// Обработчик изменения версии Python
+document.querySelector('.version-download').addEventListener('change', function() {
+    currentPythonVersion = this.value;
+    loadPresets();
+});
+
+// 🔹 Остальной код из вашего JS
 function manageAutoSave(tabId, filePath) {
     if (saveInterval) {
         clearInterval(saveInterval);
@@ -47,7 +333,6 @@ function manageAutoSave(tabId, filePath) {
     }
 }
 
-// 🔹 Функция для автодополнения
 function pythonHint(cm) {
     const cur = cm.getCursor();
     const token = cm.getTokenAt(cur);
@@ -69,11 +354,10 @@ function pythonHint(cm) {
     };
 }
 
-// 🔹 Функция инициализации CodeMirror
 function initializeCodeMirror(codeArea, content = "", filePath = null) {
     const cm = CodeMirror(codeArea, {
         mode: "python",
-        theme: body.classList.contains('dark-mode') ? "dracula" : "default",
+        theme: body.classList.contains('dark-mode') ? "material-darker" : "default",
         lineNumbers: true,
         gutters: ["CodeMirror-linenumbers"],
         autoCloseBrackets: true,
@@ -114,7 +398,6 @@ function initializeCodeMirror(codeArea, content = "", filePath = null) {
     return cm;
 }
 
-// 🔹 Функция для сохранения содержимого в файл через API
 function saveContentToFile(filePath, content) {
     const postData = {
         action: 'write_file',
@@ -145,7 +428,6 @@ function saveContentToFile(filePath, content) {
         });
 }
 
-// 🔹 Функция для загрузки содержимого файла через API
 function loadFileContent(filePath) {
     return fetch('/api/file-action', {
         method: 'POST',
@@ -178,7 +460,6 @@ function loadFileContent(filePath) {
         });
 }
 
-// 🔹 Получение CSRF-токена
 function getCookie(name) {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -202,7 +483,6 @@ function updateConsoleInputClass() {
 }
 updateConsoleInputClass();
 
-// 🔹 Функция для поиска свободного ID вкладки
 function getNextTabId() {
     const existingIds = new Set();
     document.querySelectorAll('.tab').forEach(tab => {
@@ -216,7 +496,6 @@ function getNextTabId() {
     return `tab${newId}`;
 }
 
-// 🔹 Функция создания новой вкладки
 function createNewTab(customId = null, fileName = null, content = "", filePath = null, activate = true) {
     const newTabId = customId || getNextTabId();
     const newFileName = fileName || `file${newTabId.replace("tab", "")}.py`;
@@ -231,7 +510,16 @@ function createNewTab(customId = null, fileName = null, content = "", filePath =
     const codeArea = document.createElement('div');
     codeArea.classList.add('code-area');
     codeArea.dataset.tabContent = newTabId;
-    document.querySelector('.container').insertBefore(codeArea, document.querySelector('.toolbar'));
+
+    // Вставляем codeArea перед .toolbar внутри .part2-el
+    const part2El = document.querySelector('.part2-el');
+    const toolbar = document.querySelector('.toolbar');
+    if (part2El && toolbar && part2El.contains(toolbar)) {
+        part2El.insertBefore(codeArea, toolbar);
+    } else {
+        console.error('Ошибка: .part2-el или .toolbar не найдены или .toolbar не является дочерним для .part2-el');
+        part2El.appendChild(codeArea); // Вставляем в конец, если не удалось перед .toolbar
+    }
 
     const cm = initializeCodeMirror(codeArea, content, filePath);
     codeMirrorInstances[newTabId] = cm;
@@ -241,7 +529,6 @@ function createNewTab(customId = null, fileName = null, content = "", filePath =
     saveTabsToLocalStorage();
 }
 
-// 🔹 Экспортируемая функция для открытия вкладки с содержимым и путём
 window.openFileInTab = function(filePath, content) {
     let existingTab = null;
     document.querySelectorAll('.tab').forEach(tab => {
@@ -261,22 +548,16 @@ window.openFileInTab = function(filePath, content) {
     }
 };
 
-// 🔹 Функция для обновления вкладок при переименовании
 window.updateTabsOnRename = function(oldPath, newPath) {
     document.querySelectorAll('.tab').forEach(tab => {
         const tabFilePath = tab.dataset.filePath;
         if (tabFilePath === oldPath || tabFilePath.startsWith(oldPath + '/')) {
-            // Обновляем путь, заменяя старую часть пути на новую
             const updatedPath = tabFilePath === oldPath
                 ? newPath
                 : newPath + tabFilePath.substring(oldPath.length);
             tab.dataset.filePath = updatedPath;
-            
-            // Обновляем название вкладки
             const newFileName = updatedPath.split('/').pop();
             tab.querySelector('span').textContent = newFileName;
-            
-            // Перезапускаем автосохранение для обновлённого пути
             const tabId = tab.dataset.tab;
             manageAutoSave(tabId, updatedPath);
         }
@@ -284,7 +565,6 @@ window.updateTabsOnRename = function(oldPath, newPath) {
     saveTabsToLocalStorage();
 };
 
-// 🔹 Функция активации вкладки
 function activateTab(tab) {
     const tabId = tab.dataset.tab;
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -298,7 +578,6 @@ function activateTab(tab) {
     manageAutoSave(tabId, tab.dataset.filePath);
 }
 
-// 🔹 Функция закрытия вкладки
 function closeTab(tab) {
     const tabId = tab.dataset.tab;
     document.querySelector(`.tab[data-tab="${tabId}"]`).remove();
@@ -311,7 +590,6 @@ function closeTab(tab) {
     saveTabsToLocalStorage();
 }
 
-// 🔹 Сохранение вкладок в localStorage (только ID и путь)
 function saveTabsToLocalStorage() {
     const tabsData = [];
     document.querySelectorAll('.tab').forEach(tab => {
@@ -324,7 +602,6 @@ function saveTabsToLocalStorage() {
     localStorage.setItem('savedTabs', JSON.stringify(tabsData));
 }
 
-// 🔹 Загрузка вкладок из localStorage с подгрузкой содержимого
 async function loadTabsFromLocalStorage() {
     const savedTabs = JSON.parse(localStorage.getItem('savedTabs')) || [];
     if (savedTabs.length === 0) return;
@@ -345,7 +622,6 @@ async function loadTabsFromLocalStorage() {
     }
 }
 
-// 🔹 Обработчик клика на вкладки
 tabs.addEventListener('click', (event) => {
     const tab = event.target.closest('.tab');
     if (!tab) return;
@@ -356,19 +632,17 @@ tabs.addEventListener('click', (event) => {
     activateTab(tab);
 });
 
-// 🔹 Инициализация
 document.addEventListener('DOMContentLoaded', () => {
     const nightModeButton = document.querySelector('.night-mode');
 
-    // Загрузка сохранённых вкладок
     loadTabsFromLocalStorage();
+    loadPresets();
 
-    // Инициализация темы
     const savedTheme = localStorage.getItem('theme') === 'dark';
     updateCodeMirrorTheme(savedTheme);
 
     function updateCodeMirrorTheme(isDark) {
-        const theme = isDark ? "dracula" : "default";
+        const theme = isDark ? "material-darker" : "default";
         for (const tabId in codeMirrorInstances) {
             if (codeMirrorInstances.hasOwnProperty(tabId)) {
                 codeMirrorInstances[tabId].setOption("theme", theme);
@@ -380,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!Object.keys(codeMirrorInstances).length) return;
         const currentTheme = codeMirrorInstances[Object.keys(codeMirrorInstances)[0]]
             .getOption("theme");
-        updateCodeMirrorTheme(currentTheme !== "dracula");
+        updateCodeMirrorTheme(currentTheme !== "material-darker");
     }
 
     if (nightModeButton) {
@@ -388,10 +662,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 🔹 Удаляем автоматическое сохранение при каждом клике или вводе
 window.addEventListener('beforeunload', saveTabsToLocalStorage);
 
-// 🔹 Консоль и сокеты
 function clearConsole() {
     localStorage.setItem("console", '');
     consoleOutput.value = "";
@@ -413,14 +685,28 @@ function executeCode() {
     }
 
     const filePath = activeTab.dataset.filePath;
+    const code = activeEditor.getValue();
     if (filePath) {
-        const code = activeEditor.getValue();
-        saveContentToFile(filePath, code);
+        fetch('/save_code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, file_path: filePath })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showNotification(data.error);
+            }
+        })
+        .catch(error => {
+            showNotification(`Ошибка сохранения кода: ${error}`);
+        });
     }
 
-    userId = document.querySelector(".filetree-icon").dataset.userId
-    
-    data = [userId, filePath]
+    userId = document.querySelector(".filetree-icon").dataset.userId;
+    const presetName = currentSet;
+    const pythonVersion = currentPythonVersion;
+    const data = [userId, filePath, presetName, pythonVersion];
     socket.emit('execute', data);
 }
 
@@ -435,7 +721,7 @@ socket.on('request_input', (prompt) => {
     consoleInput.readOnly = false;
     updateConsoleInputClass();
     consoleInput.focus();
-    setTimeout(() => consoleInput.focus(), 0); // Принудительный фокус
+    setTimeout(() => consoleInput.focus(), 0);
 });
 
 socket.on('console_output', (data) => {
@@ -468,7 +754,6 @@ function handleConsoleKeyPress(event) {
 
 consoleInput.addEventListener('keydown', handleConsoleKeyPress);
 
-// 🔹 Уведомления
 function showNotification(message) {
     const notification = document.createElement("div");
     notification.className = "notification";
@@ -484,3 +769,11 @@ function showNotification(message) {
         }, 500);
     }, 3000);
 }
+
+// Инициализация первого набора
+create_new_group();
+
+document.querySelector('.console-close-button').addEventListener('click', function () {
+    document.querySelector('.console').classList.toggle('close')
+    document.querySelector('.CodeMirror').classList.toggle('console-close')
+});

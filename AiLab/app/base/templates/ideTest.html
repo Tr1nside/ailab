@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C_EL</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    
+    <nav class="header">
+        <button class="files-open-close" onclick="openfilesmanager()"><img class="files-manager-image" src="img/files_fill.png"></button>
+        <div class="profile">
+            <img class="logo-header" src="img/logo.png">
+            <h3>Ailab</h3>
+            <button>профиль</button>
+        </div>
+        <div class="options">
+            <button class="chat" onclick="openchat()"><img class="chat-image" src="img/chat.png"></button>
+            <button class="record"><img class="record-image" src="img/record.png"></button>
+            <button class="nightmode"><img class="nightmode-image" src="img/moon.png"></button>
+        </div>
+    </nav>
+    
+        <!-- Заменили div.editor на div с id для CodeMirror -->
+        <div class="container main-el">
+            
+            <div class="part1-el-item">
+                <h3>Менеджер файлов</h1>
+                    <select class="manager_of_files" multiple size="25">
+                            
+                        <option class="managefile1" value="файл_1" ondblclick="
+                            managefile = this.value
+                            select_manager_file()">файл_1</option>
+                        <option class="managefile2" value="файл_2" ondblclick="
+                            managefile = this.value
+                            select_manager_file()">файл_2</option>
+                        
+                    </select>
+                
+            </div>
+
+            <div class="part2-el">
+                <div class="tabs">
+                    <div class="tab active" data-tab="tab1"><span>main.py</span><span class="close-tab">×</span>
+                        <input type="text" class="tab-input" value="main.py">
+                    </div>
+                    <div class="tab" data-tab="tab2">+</div>
+                </div>
+                <div class="code-area" data-tab-content="tab1"></div>
+                
+                <div class="toolbar" style="height: 5vh;">
+
+                    <div> 
+                        <button class="toolbarpart1 playbtn"><img src="img/play.png"></button>
+                        <button class="toolbarpart1 stopbtn"><img src="img/stop.png"></button>
+                        <button class="toolbarpart1"><img src="img/download.png"></button>
+                    </div>
+                    
+                        
+                    <button align="center" class="opt-ver-menu-triger">Выберите версию</button>
+                       
+                            
+                    <div>   
+                        <button class="toolbarpart2" onclick="terminal_close_open()"><img src="img/terminal.png"></button>
+                        <button class="toolbarpart2"><img></button>
+                        <button class="toolbarpart2"><img></button>
+                    </div>
+                    
+                </div>
+            
+                <div class="console resizable">
+                    <div class="console-label ">Консоль</div>
+                    <textarea class="console-output" readonly></textarea>
+                    <textarea class="console-input" readonly></textarea>
+                </div>
+            </div> 
+
+                <div class="part3-el-item">
+                <h3>Чат</h3>
+                </div>
+            
+        </div>
+    
+    <div class="opt-ver-menu" hidden>
+        <div class="pos-opt-ver">
+            <button class="opt-ver-menu-triger-reverse"><img src="img/cross.png"></button>
+            <div class="lang-ver-menu">
+                <div class="lang-ver-menu-item">
+                    
+                    <div class="settings-container">
+                        <div>
+                            <div class="names-settings">
+                                <div class="languages-container">
+                                    <select class="languages">
+                                        <option active>Язык ▼</option>
+                                        <option value="Python" >Python</option>
+                                        <option value="C++" >C++</option>
+                                        <option value="C#" >C#</option>
+                                        <option value="Pascal" >Pascal</option>
+                                    </select>
+                                </div>
+                                <div class="version-container">
+
+                                    <select class="version-download">
+                                        
+                                            <option active>Версия ▼</option>
+                                            <option>verion 1</option>
+                                            <option>verion 2</option>
+                                            <option>verion 3</option>
+                                        </h3>
+                                    </select>
+                                </div>
+                                
+                            </div>
+
+                            <div class="settings-options">
+                                <h3>Библиотеки</h3>
+                                
+ 
+                            </div>
+                        </div>
+                        <div class="settings-sets">
+                            <div class="title-sets">Наборы
+                                <button class="add-set" onclick="addSet()">+</button ><button class="remove-set" onclick="deleteSelectedSet()">-</button>
+                            </div>
+                            <div class="sets" id="sets-list">
+                                
+                                    <div class="set active" onclick="selectSet(this)" id="1" ondblclick="editSetName(this)"><span>set1</span></div>
+                                    
+                            </div>
+                            
+                        </div>
+                    </div>
+                    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.1.0.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/python/python.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

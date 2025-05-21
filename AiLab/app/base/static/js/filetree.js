@@ -409,11 +409,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (filetreeContainer.classList.contains('open')) {
             loadFileTree();
         }
+        if (isIdePage()) {
+            document.querySelector('.part2-el').classList.toggle('open-filetree');
+        }
     });
 
     if (closeFiletree) {
         closeFiletree.addEventListener('click', function () {
             filetreeContainer.classList.remove('open');
+            if (isIdePage()) {
+                document.querySelector('.part2-el').classList.remove('open-filetree');
+            }
         });
     }
 });

@@ -5,8 +5,7 @@
 {% block styles %}
 <!-- CodeMirror Основной стиль -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
-<!-- Тема Dracula (или выбери другую) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/dracula.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
 <!-- Стили для автодополнения -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/hint/show-hint.min.css">
 
@@ -14,32 +13,89 @@
 {% endblock %}
 
 {% block content %}
-    <div class="container">
-        <div class="tabs">
-        </div>
+    <div class="container main-el">
+        <div class="part2-el">
+            <div class="tabs"></div>
+            <div class="code-area" data-tab-content="tab1"></div>
+            
+            <div class="toolbar" style="height: 5vh;">
 
-        <!-- Заменили div.editor на div с id для CodeMirror -->
-        <div class="code-area" data-tab-content="tab1"></div>
-
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <button class="button run-button" onclick="executeCode()"><i><img class="button-icons" src="{{ url_for('static', filename='img/play443.svg') }}"></i></button>
-                <button class="button save-button" onclick="saveCodeToFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/save.svg') }}"></i></button>
-                <button class="button open-button" onclick="loadFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/load.svg') }}"></i></button>
+                <div class="toolbar-left">
+                    <button class="toolbarpart1 run-button" onclick="executeCode()"><i><img class="button-icons" src="{{ url_for('static', filename='img/play443.svg') }}"></i></button>
+                    <button class="toolbarpart1 save-button" onclick="saveCodeToFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/save.svg') }}"></i></button>
+                    <button class="toolbarpart1 open-button" onclick="loadFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/load.svg') }}"></i></button>
+                </div>
+    
+                <button align="center" class="opt-ver-menu-triger">Настройки</button>
+    
+                <div class="toolbar-right">
+                    <button class="toolbarpart2 console-close-button"><i><img class="button-icons" src="{{ url_for('static', filename='img/save-console-as-text.svg') }}"></i></button>
+                    <button class="toolbarpart2 download-button" onclick="saveConsoleToFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/save-console-as-text.svg') }}"></i></button>
+                    <button class="toolbarpart2 text-button" onclick="copyToClipboard()"><i><img class="button-icons" src="{{ url_for('static', filename='img/play.svg') }}"></i></button>
+                    <button class="toolbarpart2 delete-button" onclick="clearConsole()"><i><img class="button-icons" src="{{ url_for('static', filename='img/del-console.svg') }}"></i></button>
+                </div>
+                
             </div>
-            <div class="toolbar-right">
-                <button class="button download-button" onclick="saveConsoleToFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/save-console-as-text.svg') }}"></i></button>
-                <button class="button text-button" onclick="copyToClipboard()"><i><img class="button-icons" src="{{ url_for('static', filename='img/play.svg') }}"></i></button>
-                <button class="button delete-button" onclick="clearConsole()"><i><img class="button-icons" src="{{ url_for('static', filename='img/del-console.svg') }}"></i></button>
+        
+            <div class="console resizable">
+                <div class="console-label ">Консоль</div>
+                <textarea class="console-output" readonly></textarea>
+                <textarea class="console-input" id="consoleInput" placeholder="" readonly></textarea>
             </div>
         </div>
+        
+    </div>
 
-        <div class="console">
-            <div class="console-label">Консоль</div>
-            <textarea class="console-output" readonly></textarea>
-            <textarea class="console-input" id="consoleInput" placeholder="" readonly></textarea>
+<div class="opt-ver-menu" hidden>
+    <div class="pos-opt-ver">
+        <button class="opt-ver-menu-triger-reverse">X</button>
+        <div class="lang-ver-menu">
+            <div class="lang-ver-menu-item">
+                
+                <div class="settings-container">
+                    <div>
+                        <div class="names-settings">
+                            <div class="languages-container">
+                                <select class="languages">
+                                    <option value="python" >Python</option>
+                                </select>
+                            </div>
+                            <div class="version-container">
+                                <select class="version-download">
+                                        <option value="3.6">3.6</option>
+                                        <option value="3.9">3.9</option>
+                                        <option value="3.12">3.12</option>
+                                    </h3>
+                                </select>
+                            </div>
+                            
+                        </div>
+
+                        <div class="settings-options">
+                            <h3>Библиотеки</h3>
+                            
+
+                        </div>
+                    </div>
+                    <div class="settings-sets">
+                        <div class="title-sets">Наборы
+                            <button class="add-set" onclick="addSet()">+</button ><button class="remove-set" onclick="deleteSelectedSet()">-</button>
+                        </div>
+                        <div class="sets" id="sets-list">
+                            
+                                <div class="set active" onclick="selectSet(this)" id="1" ondblclick="editSetName(this)"><span>set1</span></div>
+                                
+                        </div>
+                        
+                    </div>
+                </div>
+                
+                </div>
+            </div>
         </div>
     </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
@@ -60,3 +116,4 @@
 
 <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 {% endblock %}
+
