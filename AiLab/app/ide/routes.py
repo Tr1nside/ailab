@@ -8,11 +8,6 @@ import subprocess
 import json
 import os
 import shutil
-import logging
-
-# Настройка логирования
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 # Список стандартных библиотек Python
 STANDARD_LIBRARIES = [
@@ -85,9 +80,6 @@ def get_libraries(python_version):
     version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python3"}
     python_executable = shutil.which(version_map.get(python_version, "python3"))
     if not python_executable:
-        logger.error(
-            f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
-        )
         return jsonify(
             {
                 "error": f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
@@ -102,7 +94,6 @@ def get_libraries(python_version):
             encoding="utf-8",
             check=True,
         )
-        logger.debug(f"Вывод pip list для Python {python_version}: {result.stdout}")
         pip_data = json.loads(result.stdout)
 
         # Проверяем формат данных
@@ -111,7 +102,6 @@ def get_libraries(python_version):
         elif isinstance(pip_data, list):
             libraries = pip_data
         else:
-            logger.error(f"Некорректный формат данных от pip list: {type(pip_data)}")
             return jsonify(
                 {"error": f"Некорректный формат данных от pip list: {type(pip_data)}"}
             ), 500
@@ -127,20 +117,17 @@ def get_libraries(python_version):
                     formatted_libraries.append(
                         {"name": lib["name"], "version": lib["version"]}
                     )
-            else:
-                logger.warning(f"Пропущена библиотека с некорректными данными: {lib}")
-
+            else: 
+                print()
+                
         # Сортируем по имени
         formatted_libraries.sort(key=lambda x: x["name"])
         return jsonify(formatted_libraries)
     except subprocess.CalledProcessError as e:
-        logger.error(f"Ошибка выполнения pip list: {e.stderr}")
         return jsonify({"error": f"Ошибка выполнения pip list: {e.stderr}"}), 500
     except json.JSONDecodeError as e:
-        logger.error(f"Ошибка декодирования JSON: {str(e)}")
         return jsonify({"error": f"Ошибка декодирования JSON: {str(e)}"}), 500
     except Exception as e:
-        logger.error(f"Ошибка получения библиотек: {str(e)}")
         return jsonify({"error": f"Ошибка получения библиотек: {str(e)}"}), 500
 
 
@@ -151,7 +138,6 @@ def get_presets():
     user_id = current_user.id
     presets_dir = os.path.join(USER_FILES_PATH, "presets", str(user_id))
     os.makedirs(presets_dir, exist_ok=True)
-    logger.debug(f"Чтение пресетов из {presets_dir}")
     presets = []
     for preset_file in os.listdir(presets_dir):
         if preset_file.endswith(".json"):
@@ -167,8 +153,7 @@ def get_presets():
                         "python_version": preset_data.get("python_version", "3.12"),
                     }
                 )
-            except Exception as e:
-                logger.warning(f"Ошибка чтения пресета {preset_name}: {str(e)}")
+            except:
                 continue
     return jsonify(presets)
 
@@ -187,7 +172,6 @@ def create_preset():
 
     # Валидация имени пресета
     if not preset_name or not preset_name.replace(" ", "").isalnum():
-        logger.error(f"Недопустимое имя пресета: {preset_name}")
         return jsonify(
             {"error": "Имя пресета должно содержать только буквы, цифры и пробелы"}
         ), 400
@@ -196,9 +180,6 @@ def create_preset():
     version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python3"}
     python_executable = shutil.which(version_map.get(python_version, "python3"))
     if not python_executable:
-        logger.error(
-            f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
-        )
         return jsonify(
             {
                 "error": f"Интерпретатор Python {python_version} ({version_map.get(python_version)}) не найден"
@@ -219,9 +200,6 @@ def create_preset():
         elif isinstance(pip_data, list):
             installed_libraries = {lib["name"] for lib in pip_data}
         else:
-            logger.error(
-                f"Некорректный формат данных от pip list в create_preset: {type(pip_data)}"
-            )
             return jsonify({"error": "Некорректный формат данных от pip list"}), 500
 
         # Добавляем стандартные и системные библиотеки в список допустимых
@@ -229,15 +207,12 @@ def create_preset():
         installed_libraries.update(SYSTEM_LIBRARIES)
         invalid_libraries = [lib for lib in libraries if lib not in installed_libraries]
         if invalid_libraries:
-            logger.error(f"Библиотеки не найдены: {', '.join(invalid_libraries)}")
             return jsonify(
                 {"error": f"Библиотеки не найдены: {', '.join(invalid_libraries)}"}
             ), 400
     except subprocess.CalledProcessError as e:
-        logger.error(f"Ошибка проверки библиотек: {e.stderr}")
         return jsonify({"error": f"Ошибка проверки библиотек: {e.stderr}"}), 500
     except Exception as e:
-        logger.error(f"Ошибка проверки библиотек: {str(e)}")
         return jsonify({"error": f"Ошибка проверки библиотек: {str(e)}"}), 500
 
     # Автоматически добавляем стандартные и системные библиотеки
@@ -245,12 +220,10 @@ def create_preset():
 
     try:
         os.makedirs(presets_dir, exist_ok=True)
-        logger.debug(f"Сохранение пресета в {preset_path}")
         with open(preset_path, "w", encoding="utf-8") as f:
             json.dump({"libraries": libraries, "python_version": python_version}, f)
         return jsonify({"message": f"Пресет '{preset_name}' сохранен"})
     except Exception as e:
-        logger.error(f"Ошибка сохранения пресета: {str(e)}")
         return jsonify({"error": f"Ошибка сохранения пресета: {str(e)}"}), 500
 
 
@@ -263,14 +236,11 @@ def delete_preset(preset_name):
         USER_FILES_PATH, "presets", str(user_id), f"{preset_name}.json"
     )
     if not os.path.exists(preset_path):
-        logger.error(f"Пресет '{preset_name}' не найден по пути {preset_path}")
         return jsonify({"error": f"Пресет '{preset_name}' не найден"}), 404
     try:
         os.remove(preset_path)
-        logger.debug(f"Пресет '{preset_name}' удален")
         return jsonify({"message": f"Пресет '{preset_name}' удален"})
     except Exception as e:
-        logger.error(f"Ошибка удаления пресета: {str(e)}")
         return jsonify({"error": f"Ошибка удаления пресета: {str(e)}"}), 500
 
 
@@ -287,8 +257,6 @@ def save_code():
         os.makedirs(os.path.dirname(full_path), exist_ok=True)
         with open(full_path, "w", encoding="utf-8") as f:
             f.write(code)
-        logger.debug(f"Код сохранен в {full_path}")
         return jsonify({"message": "Код сохранен"})
     except Exception as e:
-        logger.error(f"Ошибка сохранения кода: {str(e)}")
         return jsonify({"error": f"Ошибка сохранения кода: {str(e)}"}), 500
