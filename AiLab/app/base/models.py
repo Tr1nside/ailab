@@ -139,6 +139,15 @@ class Friendship(db.Model):
     )
 
 
+class AIChat(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    context = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship("User", backref="ai_chats")
+
+
 class Attachment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     message_id = db.Column(db.Integer, db.ForeignKey("message.id"), nullable=False)
@@ -151,10 +160,11 @@ class Attachment(db.Model):
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text, nullable=True)
-    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    recipient_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    recipient_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     is_read = db.Column(db.Boolean, default=False)
+    ai_chat_id = db.Column(db.Integer, db.ForeignKey("ai_chat.id"), nullable=True)
     sender = db.relationship("User", foreign_keys=[sender_id], backref="sent_messages")
     recipient = db.relationship(
         "User", foreign_keys=[recipient_id], backref="received_messages"
@@ -162,3 +172,4 @@ class Message(db.Model):
     attachments = db.relationship(
         "Attachment", back_populates="message", cascade="all, delete-orphan"
     )
+    ai_chat = db.relationship("AIChat", backref="messages")

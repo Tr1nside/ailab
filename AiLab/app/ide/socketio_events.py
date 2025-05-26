@@ -13,7 +13,6 @@ import shutil
 
 pending_inputs = {}
 
-
 def register_socketio_events(socketio):
     """
     Функция, которая регистрирует все события SocketIO.
@@ -151,10 +150,13 @@ def custom_input(prompt=""):
     print(json.dumps({{"type": "input_request", "prompt": prompt}}))
     sys.stdout.flush()
     line = sys.stdin.readline().strip()
-    data = json.loads(line)
-    if data["type"] == "input_response":
-        return data["value"]
-    return ""
+    try:
+        data = json.loads(line)
+        if data["type"] == "input_response":
+            return data["value"]
+        return ""
+    except json.JSONDecodeError:
+        return ""
 
 # Заменяем встроенный input
 builtins.input = custom_input
@@ -186,7 +188,7 @@ sys.path.insert(0, "{}")
                 text=True,
                 encoding="utf-8",
                 errors="replace",
-                bufsize=1,
+                bufsize=1,  # Построчная буферизация
                 env={**os.environ, "PYTHONIOENCODING": "utf-8"},
             )
 
@@ -194,6 +196,7 @@ sys.path.insert(0, "{}")
                 output_buffer = io.StringIO()
                 while True:
                     try:
+                        # Читаем вывод построчно
                         line = process.stdout.readline()
                         if not line and process.poll() is not None:
                             break
@@ -205,12 +208,14 @@ sys.path.insert(0, "{}")
                                     isinstance(data, dict)
                                     and data.get("type") == "input_request"
                                 ):
+                                    # Отправляем запрос ввода клиенту
                                     socketio.emit(
                                         "request_input", data["prompt"], room=sid
                                     )
                                     ev = eventlet.Event()
                                     pending_inputs[sid] = ev
                                     user_input = ev.wait()
+                                    # Отправляем ввод в процесс
                                     process.stdin.write(
                                         json.dumps(
                                             {
@@ -222,21 +227,24 @@ sys.path.insert(0, "{}")
                                     )
                                     process.stdin.flush()
                                 else:
-                                    output_buffer.write(str(data) + "\n")
+                                    # Отправляем обычный вывод клиенту
+                                    socketio.emit("console_output", str(data), room=sid)
                             except json.JSONDecodeError:
-                                output_buffer.write(line + "\n")
+                                # Обычный вывод, не JSON
+                                socketio.emit("console_output", line, room=sid)
                     except Exception as e:
-                        output_buffer.write(f"Ошибка обработки вывода: {e}\n")
+                        socketio.emit(
+                            "console_output", f"Ошибка обработки вывода: {e}", room=sid
+                        )
 
                 # Собираем ошибки, если есть
                 stderr_output = process.stderr.read()
                 if stderr_output:
-                    output_buffer.write(stderr_output)
+                    socketio.emit("console_output", stderr_output, room=sid)
 
-                result = output_buffer.getvalue().rstrip()
-                if not result:
-                    result = "Код выполнен, но вывода не было."
-                socketio.emit("console_output", result, room=sid)
+                # Если нет вывода, отправляем сообщение
+                if not output_buffer.getvalue():
+                    print(52222)
                 output_buffer.close()
 
                 # Удаляем временный файл
@@ -250,6 +258,7 @@ sys.path.insert(0, "{}")
                             room=sid,
                         )
 
+            # Запускаем обработку в отдельном потоке
             Thread(target=handle_process).start()
 
         except Exception as e:

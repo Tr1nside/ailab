@@ -105,10 +105,20 @@ document.addEventListener('DOMContentLoaded', function () {
     function attachContactListeners() {
         const contactItems = document.querySelectorAll('.contact-item');
         contactItems.forEach(item => {
-            item.addEventListener('click', function () {
-                const userId = this.dataset.userId;
-                loadChat(userId);
-            });
+            if (item.dataset.aiChats === "true") {
+                item.addEventListener('click', function () {
+                    loadAIContacts();
+                });
+            } else {
+                item.addEventListener('click', function () {
+                    const userId = this.dataset.userId;
+                    if (userId) {
+                        loadChat(userId);
+                    } else {
+                        console.error('User ID не найден для контакта:', this);
+                    }
+                });
+            }
         });
     }
 
@@ -247,21 +257,20 @@ document.addEventListener('DOMContentLoaded', function () {
             input.style.height = Math.min(input.scrollHeight, 150) + 'px';
         }
 
-        // messenger.js (функция sendMessage)
         function sendMessage() {
             const text = input.value.trim();
             const fileInput = document.getElementById('file-input');
             const files = Array.from(fileInput.files); // Получаем текущие файлы
-        
+
             if (!text && files.length === 0) return;
-        
+
             const form = new FormData();
             form.append('recipient_id', userId);
             if (text) form.append('text', text);
-        
+
             // Добавляем только текущие файлы
             files.forEach(f => form.append('files', f));
-        
+
             fetch('/messenger/send', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': getCookie('csrf_token') },
@@ -299,6 +308,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (backButton) {
             backButton.addEventListener('click', loadContacts);
         }
+        
     }
 
     function scrollToBottom() {
@@ -371,8 +381,221 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    // ===========================
+
+    // Загрузка списка чатов с ИИ
+    function loadAIContacts() {
+        document.getElementById('messenger-header').classList.remove('hidden');
+        fetch('/messenger/ai/contacts')
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('messenger-content').innerHTML = html;
+                attachAIContactListeners();
+                scrollToBottom();
+            });
+    }
+
+    // Обработчики для списка чатов с ИИ
+    function attachAIContactListeners() {
+        const contactItems = document.querySelectorAll('.contact-item[data-ai-chat-id]');
+        contactItems.forEach(item => {
+            item.addEventListener('click', function () {
+                const aiChatId = this.dataset.aiChatId;
+                loadAIChat(aiChatId);
+            });
+        });
+
+        const backButton = document.querySelector('.back-button');
+        if (backButton) {
+            backButton.addEventListener('click', loadContacts);
+        }
+
+        const createChatButton = document.getElementById('create_chat_but');
+        const createChatTextarea = document.getElementById('create_chat_textarea');
+        if (createChatButton && createChatTextarea) {
+            createChatButton.addEventListener('click', function () {
+                const chatName = createChatTextarea.value.trim();
+                if (!chatName) {
+                    alert('Введите имя чата');
+                    return;
+                }
+
+                fetch('/messenger/ai/create_chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrf_token')
+                    },
+                    body: JSON.stringify({ name: chatName })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            createChatTextarea.value = ''; // Очищаем текстовое поле
+                            loadAIContacts(); // Перезагружаем список чатов
+                        } else {
+                            alert(data.error || 'Ошибка создания чата');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка создания чата:', error);
+                        alert('Не удалось создать чат');
+                    });
+            });
+        }
+        const backAiButton = document.getElementById('back-ai-button');
+        if (backAiButton) {
+            backAiButton.addEventListener('click', loadContacts);
+        }
+    }
+
+    // Загрузка чата с ИИ
+    function loadAIChat(aiChatId) {
+        document.getElementById('messenger-header').classList.add('hidden');
+        const messagesContainer = document.getElementById('messages-container');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = ''; // Очищаем контейнер перед загрузкой
+        }
+        fetch(`/messenger/ai/chat/${aiChatId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                const content = document.getElementById('messenger-content');
+                if (!content) {
+                    throw new Error('Элемент #messenger-content не найден в DOM');
+                }
+                content.innerHTML = html;
+                if (!document.getElementById('messages-container')) {
+                    throw new Error('Элемент #messages-container не найден в HTML');
+                }
+                formatMessageTimes(); // Форматирование времени
+                scrollToBottom();
+                attachAIChatListeners(aiChatId);
+                attachAttachmentListeners();
+            })
+            .catch(error => {
+                console.error('Ошибка загрузки чата с ИИ:', error);
+                alert(`Не удалось загрузить чат с ИИ: ${error.message}`);
+            });
+    }
+
+    // Обработчики для чата с ИИ
+    function attachAIChatListeners(aiChatId) {
+        const input = document.getElementById('message-input');
+        const sendButton = document.querySelector('.send-button');
+        const messagesContainer = document.getElementById('messages-container');
+        const clearButton = document.getElementById('clear-history');
+
+        clearButton.addEventListener('click', () => {
+            const postData = {
+                action: "clear_history",
+                element: {
+                    ai_chat_id: aiChatId
+                }
+            };
+
+            // Отправка на сервер
+            fetch('/api/execute-action', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(postData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        loadAIChat(aiChatId);
+                    } else {
+                        alert("Error: " + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    alert("Request failed");
+                });
+        });
+
+        if (input) {
+            input.addEventListener('input', function () {
+                this.style.height = 'auto'; // Сброс высоты
+                this.style.height = Math.min(this.scrollHeight, 150) + 'px'; // Ограничение по max-height
+            });
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault(); // Отменяем стандартное поведение (перенос строки)
+                    sendAIMessage(); // Отправляем сообщение
+                }
+                // Если Shift + Enter — перенос строки работает как обычно
+            });
+
+            // Инициализируем начальную высоту (если есть текст при загрузке)
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+        }
+
+        function sendAIMessage() {
+            const text = input.value.trim();
+            const fileInput = document.getElementById('file-input');
+            const files = Array.from(fileInput.files); // Получаем текущие файлы
+        
+            if (!text && files.length === 0) return;
+        
+            const form = new FormData();
+            form.append('ai_chat_id', aiChatId);
+            if (text) form.append('text', text);
+        
+            // Добавляем только текущие файлы
+            files.forEach(f => form.append('files', f));
+        
+            fetch('/messenger/ai/send', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrf_token') },
+                body: form
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        input.value = ''; // Очищаем текстовое поле
+                        // Полностью сбрасываем input type="file"
+                        fileInput.value = ''; // Сбрасываем значение
+                        // Пересоздаем input для полной очистки
+                        const newFileInput = document.createElement('input');
+                        newFileInput.type = 'file';
+                        newFileInput.id = 'file-input';
+                        newFileInput.multiple = true;
+                        newFileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.js,.html,.py,.cpp';
+                        fileInput.parentNode.replaceChild(newFileInput, fileInput);
+                        loadAIChat(aiChatId); // Перезагружаем чат
+                    } else {
+                        alert(data.error || 'Ошибка отправки');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка отправки сообщения:', error);
+                    alert('Не удалось отправить сообщение');
+                });
+        }
+
+        sendButton.addEventListener('click', sendAIMessage);
+        input.focus();
+
+        const backButton = document.querySelector('.back-button');
+        if (backButton) {
+            backButton.addEventListener('click', loadAIContacts);
+        }
+    }
+
     // Инициализация
     setupSocketListeners();
     checkNewMessages();
     setInterval(checkNewMessages, 30000);
 });
+
+
+
+

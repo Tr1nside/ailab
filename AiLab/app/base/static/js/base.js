@@ -91,8 +91,46 @@ function renderContextMenu(items, x, y) {
 // Обработка выбора пункта меню
 function handleMenuAction(action) {
     if (!currentContextElement) return; // Проверяем, что элемент сохранён
+    
+    if (action === "delete_chat") {
+        const chatId = currentContextElement.dataset.aiChatId;
+        if (!chatId) return;
 
-    if (action === "edit") {
+        const postData = {
+            action: action,
+            element: {
+                ai_chat_id: chatId
+            }
+        };
+
+        fetch('/api/execute-action', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(postData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    // Удаляем элемент чата из списка
+                    currentContextElement.closest('.contact-item').remove();
+                    // Если мы в этом чате, перенаправляем на список чатов
+                    if (window.location.pathname.includes(`/ai/chat/${chatId}`)) {
+                        window.location.href = '/messenger/ai/contacts';
+                    }
+                } else {
+                    alert("Ошибка: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error("Ошибка:", error);
+                alert("Не удалось удалить чат");
+            });
+
+        contextMenu.style.display = 'none';
+        return;
+    } else if (action === "edit") {
         const messageElement = currentContextElement.closest('.message');
         const messageTextElement = messageElement.querySelector('.message-text');
         const messageId = currentContextElement.dataset.id;

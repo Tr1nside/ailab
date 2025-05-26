@@ -30,6 +30,13 @@ const pythonKeywords = [
 ];
 
 let saveInterval = null;
+let setcounter = 0;
+let currentSet = 'set1';
+let currentPythonVersion = document.querySelector('.version-download').value || '3.12';
+const setsData = {
+    'set1': { libraries: [], python_version: '3.12' }
+};
+let libraries_massive = [];
 
 // 🔹 Управление меню opt-ver-menu
 const optvermenu = document.querySelector('.opt-ver-menu');
@@ -42,7 +49,6 @@ optvermenutriger.addEventListener("click", function() {
     container.hidden = true;
     document.querySelector(".console").hidden = true;
     optvermenu.hidden = false;
-    
 });
 
 optvermenutrigerreverse.addEventListener("click", function() {
@@ -51,17 +57,21 @@ optvermenutrigerreverse.addEventListener("click", function() {
     document.querySelector(".console").hidden = false;
 });
 
-let setcounter = 1;
-let currentSet = 'set1';
-let currentPythonVersion = document.querySelector('.version-download').value || '3.12';
-const setsData = {
-    'set1': { libraries: [], python_version: '3.12' }
-};
-let libraries_massive = [];
-
 function toggleCheck(element) {
     element.classList.toggle('checked');
     const libraryName = element.querySelector('span:first-child').textContent.trim();
+    
+    if (!setsData[currentSet]) {
+        const activeSet = document.querySelector('.set.active');
+        if (activeSet) {
+            currentSet = activeSet.querySelector('span').textContent.trim();
+        } else {
+            console.error('Активный пресет не найден, создаём новый');
+            addSet();
+            return;
+        }
+    }
+
     const index = setsData[currentSet].libraries.indexOf(libraryName);
     
     if (element.classList.contains('checked')) {
@@ -84,13 +94,27 @@ function selectSet(element) {
     currentSet = element.querySelector('span').textContent.trim();
     const setId = element.id;
     document.querySelectorAll(".libraries").forEach(libs => { libs.classList.remove('active'); });
-    libraries_massive[setId - 1].classList.add("active");
+    if (libraries_massive[setId - 1]) {
+        libraries_massive[setId - 1].classList.add("active");
+    } else {
+        console.warn(`Элемент с индексом ${setId - 1} в libraries_massive не найден. Создаём новый group.`);
+        create_new_group().then(() => {
+            if (libraries_massive[setId - 1]) {
+                libraries_massive[setId - 1].classList.add("active");
+            }
+        });
+    }
     hideAllExcept();
     updateLibraryCheckboxes();
+    if (!setsData[currentSet]) {
+        setsData[currentSet] = { libraries: [], python_version: currentPythonVersion };
+        savePreset(currentSet, [], currentPythonVersion);
+    }
+    saveCurrentPresetToLocalStorage();
 }
 
 function addSet() {
-    setcounter += 1;
+    console.log('addSet called, setcounter:', setcounter);
     const setName = `set${setcounter}`;
     setsData[setName] = { libraries: [], python_version: currentPythonVersion };
     
@@ -106,19 +130,23 @@ function addSet() {
     newSet.onclick = function() { selectSet(this); };
     document.getElementById('sets-list').appendChild(newSet);
     
-    create_new_group();
-    hideAllExcept();
-    currentSet = setName;
-    savePreset(setName, [], currentPythonVersion);
+    return create_new_group().then(() => {
+        hideAllExcept();
+        currentSet = setName;
+        savePreset(setName, [], currentPythonVersion);
+        saveCurrentPresetToLocalStorage();
+        console.log('addSet completed, new preset:', setName);
+    });
 }
 
 function deleteSelectedSet() {
     if (document.querySelector(".sets").childElementCount > 1) {
         const selectedSet = document.querySelector('.set.active');
         const setName = selectedSet.querySelector('span').textContent.trim();
+        const selectedSetId = parseInt(selectedSet.id);
         selectedSet.remove();
         document.querySelector(".libraries.active").remove();
-        libraries_massive = libraries_massive.filter((_, index) => index !== parseInt(selectedSet.id) - 1);
+        libraries_massive = libraries_massive.filter((_, index) => index !== (selectedSetId - 1));
         fetch(`/delete_preset/${encodeURIComponent(setName)}`, {
             method: 'DELETE'
         })
@@ -139,11 +167,24 @@ function deleteSelectedSet() {
         const elcol = document.querySelectorAll('.set');
         const last_el = elcol[elcol.length - 1];
         last_el.classList.add("active");
-        const last_el_id = last_el.id;
-        libraries_massive[last_el_id - 1].classList.add("active");
+        const last_el_id = parseInt(last_el.id);
         currentSet = last_el.querySelector('span').textContent.trim();
         hideAllExcept();
-        updateLibraryCheckboxes();
+        if (libraries_massive[last_el_id - 1]) {
+            libraries_massive[last_el_id - 1].classList.add("active");
+        } else {
+            console.warn(`Элемент с индексом ${last_el_id - 1} в libraries_massive не найден. Создаём новый group.`);
+            create_new_group().then(() => {
+                if (libraries_massive[last_el_id - 1]) {
+                    libraries_massive[last_el_id - 1].classList.add("active");
+                }
+            });
+        }
+        if (!setsData[currentSet]) {
+            setsData[currentSet] = { libraries: [], python_version: currentPythonVersion };
+            savePreset(currentSet, [], currentPythonVersion);
+        }
+        saveCurrentPresetToLocalStorage();
     }
 }
 
@@ -180,6 +221,7 @@ function editSetName(element) {
                     delete setsData[oldName];
                     currentSet = newName;
                     savePreset(newName, setsData[newName].libraries, setsData[newName].python_version);
+                    saveCurrentPresetToLocalStorage();
                 });
         }
         input.removeEventListener('keydown', handleEnter);
@@ -207,70 +249,126 @@ function hideAllExcept() {
 }
 
 function create_new_group() {
-    const libraries_new = document.createElement('div');
-    document.querySelectorAll(".libraries").forEach(libs => { libs.classList.remove('active'); });
-    libraries_new.classList.add("libraries", "active");
-    libraries_new.innerHTML = `
-        <span class="labels-of-elements-libraries"><span>Библиотека</span><span>Версия</span><span>Последняя версия</span></span>
-    `;
-    fetch(`/libraries/${currentPythonVersion}`)
-        .then(response => response.json())
-        .then(libraries => {
-            if (libraries.error) {
-                showNotification(libraries.error);
-                return;
-            }
-            libraries.forEach(lib => {
-                const libElement = document.createElement('div');
-                libElement.className = 'lib_element';
-                libElement.setAttribute('ondblclick', 'toggleCheck(this)');
-                libElement.innerHTML = `<span>${lib.name}</span><span>${lib.version}</span><span>${lib.version}</span>`;
-                libraries_new.appendChild(libElement);
+    return new Promise((resolve) => {
+        const libraries_new = document.createElement('div');
+        document.querySelectorAll(".libraries").forEach(libs => { libs.classList.remove('active'); });
+        libraries_new.classList.add("libraries", "active");
+        libraries_new.innerHTML = `
+            <span class="labels-of-elements-libraries"><span>Библиотека</span><span>Версия</span><span>Последняя версия</span></span>
+        `;
+        fetch(`/libraries/${currentPythonVersion}`)
+            .then(response => response.json())
+            .then(libraries => {
+                if (libraries.error) {
+                    showNotification(libraries.error);
+                    resolve();
+                    return;
+                }
+                libraries.forEach(lib => {
+                    const libElement = document.createElement('div');
+                    libElement.className = 'lib_element';
+                    libElement.setAttribute('ondblclick', 'toggleCheck(this)');
+                    libElement.innerHTML = `<span>${lib.name}</span><span>${lib.version}</span><span>${lib.version}</span>`;
+                    libraries_new.appendChild(libElement);
+                });
+                updateLibraryCheckboxes();
+                document.querySelector('.settings-options').appendChild(libraries_new);
+                libraries_massive.push(libraries_new);
+                resolve();
+            })
+            .catch(error => {
+                showNotification(`Ошибка загрузки библиотек: ${error}`);
+                resolve();
             });
-            updateLibraryCheckboxes();
-        })
-        .catch(error => {
-            showNotification(`Ошибка загрузки библиотек: ${error}`);
-        });
-    document.querySelector('.settings-options').appendChild(libraries_new);
-    libraries_massive.push(libraries_new);
+    });
 }
 
 function loadPresets() {
+    console.log('loadPresets started');
     fetch('/presets')
         .then(response => response.json())
         .then(presets => {
-            setcounter = 0;
+            console.log('Presets fetched:', presets);
             document.getElementById('sets-list').innerHTML = '';
             libraries_massive = [];
             document.querySelectorAll('.libraries').forEach(lib => lib.remove());
             Object.keys(setsData).forEach(setName => delete setsData[setName]);
 
-            presets.forEach((preset, index) => {
+            const savedPreset = JSON.parse(localStorage.getItem('lastPreset'));
+            let lastPresetName = savedPreset?.presetName;
+            let lastPythonVersion = savedPreset?.pythonVersion || '3.12';
+
+            currentPythonVersion = document.querySelector('.version-download').value || lastPythonVersion;
+
+            let presetFound = presets.some(preset => preset.name === lastPresetName && preset.python_version === currentPythonVersion);
+            let maxSetCounter = 0;
+            let setIndex = 0;
+
+            const promises = [];
+            let firstPresetForVersion = null;
+
+            presets.forEach((preset) => {
                 if (preset.python_version === currentPythonVersion) {
-                    setcounter += 1;
+                    setIndex += 1;
                     const setName = preset.name;
                     setsData[setName] = { libraries: preset.libraries, python_version: preset.python_version };
 
                     const newSet = document.createElement('div');
-                    newSet.className = `set${index === 0 ? ' active' : ''}`;
-                    newSet.id = setcounter;
+                    newSet.className = `set${setName === lastPresetName ? ' active' : ''}`;
+                    newSet.id = setIndex;
                     newSet.innerHTML = `<span>${setName}</span>`;
                     newSet.setAttribute("ondblclick", "editSetName(this)");
                     newSet.onclick = function() { selectSet(this); };
                     document.getElementById('sets-list').appendChild(newSet);
 
-                    create_new_group();
-                    if (index === 0) {
-                        currentSet = setName;
-                        updateLibraryCheckboxes();
+                    promises.push(create_new_group());
+                    if (!firstPresetForVersion) {
+                        firstPresetForVersion = setName; // Запоминаем первый пресет для текущей версии
                     }
+                    if (setName === lastPresetName) {
+                        currentSet = setName;
+                    }
+                    const setNumber = parseInt(setName.replace('set', '')) || 0;
+                    maxSetCounter = Math.max(maxSetCounter, setNumber);
                 }
             });
-            hideAllExcept();
-            if (setcounter === 0) {
-                addSet();
-            }
+
+            setcounter = maxSetCounter;
+
+            Promise.all(promises).then(() => {
+                const hasSets = document.querySelectorAll('.set').length > 0;
+
+                // Если подходящего пресета нет и нет пресетов для текущей версии, создаём новый
+                if (!presetFound && !hasSets) {
+                    setcounter += 1;
+                    lastPresetName = `set${setcounter}`;
+                    currentSet = lastPresetName;
+                    console.log('Creating new preset (no preset found and no sets):', lastPresetName);
+                    addSet();
+                } else if (!hasSets) {
+                    setcounter += 1;
+                    lastPresetName = `set${setcounter}`;
+                    currentSet = lastPresetName;
+                    console.log('Creating new preset (no sets):', lastPresetName);
+                    addSet();
+                } else if (firstPresetForVersion) {
+                    // Активируем первый пресет для текущей версии, если он существует
+                    currentSet = firstPresetForVersion;
+                    const firstSetElement = document.querySelector(`.set span`).parentElement;
+                    if (firstSetElement) {
+                        selectSet(firstSetElement);
+                    }
+                }
+
+                hideAllExcept();
+                const activeSet = document.querySelector('.set.active');
+                if (activeSet && currentSet !== activeSet.querySelector('span').textContent.trim()) {
+                    currentSet = activeSet.querySelector('span').textContent.trim();
+                }
+                updateLibraryCheckboxes();
+                saveCurrentPresetToLocalStorage();
+                console.log('loadPresets completed, currentSet:', currentSet, 'setsData:', setsData);
+            });
         })
         .catch(error => {
             showNotification(`Ошибка загрузки пресетов: ${error}`);
@@ -310,13 +408,20 @@ function updateLibraryCheckboxes() {
     });
 }
 
-// Обработчик изменения версии Python
 document.querySelector('.version-download').addEventListener('change', function() {
     currentPythonVersion = this.value;
+    saveCurrentPresetToLocalStorage();
     loadPresets();
 });
 
-// 🔹 Остальной код из вашего JS
+function saveCurrentPresetToLocalStorage() {
+    const presetData = {
+        presetName: currentSet,
+        pythonVersion: currentPythonVersion
+    };
+    localStorage.setItem('lastPreset', JSON.stringify(presetData));
+}
+
 function manageAutoSave(tabId, filePath) {
     if (saveInterval) {
         clearInterval(saveInterval);
@@ -511,14 +616,13 @@ function createNewTab(customId = null, fileName = null, content = "", filePath =
     codeArea.classList.add('code-area');
     codeArea.dataset.tabContent = newTabId;
 
-    // Вставляем codeArea перед .toolbar внутри .part2-el
     const part2El = document.querySelector('.part2-el');
     const toolbar = document.querySelector('.toolbar');
     if (part2El && toolbar && part2El.contains(toolbar)) {
         part2El.insertBefore(codeArea, toolbar);
     } else {
         console.error('Ошибка: .part2-el или .toolbar не найдены или .toolbar не является дочерним для .part2-el');
-        part2El.appendChild(codeArea); // Вставляем в конец, если не удалось перед .toolbar
+        part2El.appendChild(codeArea);
     }
 
     const cm = initializeCodeMirror(codeArea, content, filePath);
@@ -634,9 +738,21 @@ tabs.addEventListener('click', (event) => {
 
 document.addEventListener('DOMContentLoaded', () => {
     const nightModeButton = document.querySelector('.night-mode');
+    const downloadBtn = document.getElementById('save-button');
 
     loadTabsFromLocalStorage();
     loadPresets();
+
+    downloadBtn.addEventListener('click', () => {
+        downloadActiveCodeMirrorContent();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'd') {
+            e.preventDefault();
+            downloadActiveCodeMirrorContent();
+        }
+    });
 
     const savedTheme = localStorage.getItem('theme') === 'dark';
     updateCodeMirrorTheme(savedTheme);
@@ -703,7 +819,7 @@ function executeCode() {
         });
     }
 
-    userId = document.querySelector(".filetree-icon").dataset.userId;
+    const userId = document.querySelector(".filetree-icon").dataset.userId;
     const presetName = currentSet;
     const pythonVersion = currentPythonVersion;
     const data = [userId, filePath, presetName, pythonVersion];
@@ -770,8 +886,153 @@ function showNotification(message) {
     }, 3000);
 }
 
-// Инициализация первого набора
-create_new_group();
+function downloadActiveCodeMirrorContent(customName) {
+    const activeTab = document.querySelector('.tab.active');
+    if (!activeTab) {
+        showNotification('Нет активной вкладки для скачивания');
+        return;
+    }
+
+    const tabId = activeTab.dataset.tab;
+    const editor = codeMirrorInstances[tabId];
+    if (!editor) {
+        showNotification('Редактор для активной вкладки не найден');
+        return;
+    }
+
+    const content = editor.getValue();
+    const filePath = activeTab.dataset.filePath;
+    let filename = customName;
+
+    if (!filename) {
+        if (filePath) {
+            filename = filePath.split('/').pop();
+        } else {
+            filename = activeTab.querySelector('span').textContent.trim();
+            if (!filename.includes('.')) {
+                const mode = editor.getOption('mode');
+                filename += getFileExtension(mode);
+            }
+        }
+    }
+
+    const filetype = getMimeType(filename);
+    const blob = new Blob([content], { type: filetype });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }, 100);
+}
+
+function getFileExtension(mode) {
+    const extensions = {
+        'python': '.py',
+        'javascript': '.js',
+        'htmlmixed': '.html',
+        'css': '.css',
+        'xml': '.xml',
+        'text/x-python': '.py',
+        'text/javascript': '.js',
+        'text/html': '.html',
+        'text/css': '.css'
+    };
+    return extensions[mode] || '.txt';
+}
+
+function getMimeType(filename) {
+    const extension = filename.split('.').pop().toLowerCase();
+    const mimeTypes = {
+        'py': 'text/x-python',
+        'js': 'text/javascript',
+        'html': 'text/html',
+        'css': 'text/css',
+        'txt': 'text/plain'
+    };
+    return mimeTypes[extension] || 'text/plain';
+}
+
+function saveConsoleToFile(filename = 'console_output.txt') {
+    const consoleOutput = document.querySelector('.console-output');
+    
+    if (!consoleOutput) {
+        console.error('Элемент консоли не найден');
+        showNotification('Ошибка: элемент консоли не найден');
+        return;
+    }
+
+    const content = consoleOutput.value;
+    
+    if (!content.trim()) {
+        showNotification('Консоль пуста, нечего сохранять');
+        return;
+    }
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.style.display = 'none';
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showNotification(`Содержимое консоли сохранено в ${filename}`);
+    }, 100);
+}
+
+function copyToClipboard() {
+    const consoleOutput = document.querySelector('.console-output');
+    
+    if (!consoleOutput) {
+        console.error('Элемент консоли не найден');
+        showNotification('Ошибка: элемент консоли не найден', 'error');
+        return;
+    }
+
+    const content = consoleOutput.value;
+    
+    if (!content.trim()) {
+        showNotification('Консоль пуста, нечего копировать', 'warning');
+        return;
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = content;
+    textarea.style.position = 'fixed';
+    document.body.appendChild(textarea);
+    textarea.select();
+    
+    try {
+        const successful = document.execCommand('copy');
+        if (successful) {
+            showNotification('Содержимое консоли скопировано в буфер обмена', 'success');
+        } else {
+            throw new Error('Не удалось выполнить копирование');
+        }
+    } catch (err) {
+        console.error('Ошибка при копировании:', err);
+        showNotification('Ошибка при копировании', 'error');
+        
+        navigator.clipboard.writeText(content).then(
+            () => showNotification('Содержимое скопировано', 'success'),
+            () => showNotification('Не удалось скопировать', 'error')
+        );
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
 
 document.querySelector('.console-close-button').addEventListener('click', function () {
     document.querySelector('.console').classList.toggle('close')

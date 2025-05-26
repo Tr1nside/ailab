@@ -1,0 +1,16 @@
+<div class="create-chat-container">
+    <button class="create_chat" id="back-ai-button">←</button>
+    <button class="create_chat" id="create_chat_but">+</button>
+    <textarea name="Chat name" id="create_chat_textarea" placeholder="Введите имя чата"></textarea>
+</div>
+<ul class="contact-list">
+    {% for chat in chats %}
+    <li class="contact-item context-area" data-ai-chat-id="{{ chat.id }}" data-context-type="ai_chat">
+        <div class="contact-info">
+            <p class="contact-name">{{ chat.name }}</p>
+        </div>
+    </li>
+    {% else %}
+    <p>У вас пока нет чатов с ИИ</p>
+    {% endfor %}
+</ul>

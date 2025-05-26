@@ -1,4 +1,12 @@
 <ul class="contact-list">
+    <li class="contact-item" data-ai-chats="true">
+        <img src="{{ url_for('static', filename='img/ai_icon.png') }}" 
+             alt="Чаты с ИИ" 
+             class="contact-avatar">
+        <div class="contact-info">
+            <p class="contact-name">Исскуственный Интелект</p>
+        </div>
+    </li>
     {% for friend in friends %}
     <li class="contact-item" data-user-id="{{ friend.id }}">
         <img src="{{ url_for('static', filename='uploads/' + friend.profile.profile_photo) }}" 

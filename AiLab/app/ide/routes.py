@@ -136,7 +136,7 @@ def get_libraries(python_version):
 def get_presets():
     """Возвращает список пресетов пользователя."""
     user_id = current_user.id
-    presets_dir = os.path.join(USER_FILES_PATH, "presets", str(user_id))
+    presets_dir = os.path.join(USER_FILES_PATH, "context", str(user_id))
     os.makedirs(presets_dir, exist_ok=True)
     presets = []
     for preset_file in os.listdir(presets_dir):

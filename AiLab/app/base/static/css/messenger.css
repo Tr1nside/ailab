@@ -9,6 +9,10 @@
     --scrollbar-track: #f5f5f5;
     --scrollbar-thumb: #d8d8d8;
     --scrollbar-thumb-hover: #c1c1c1;
+    --button-bg: #ffffff;
+    --button-bg-active: #d0d0d0;
+    --contact-hover: #f1f1f1;
+    --contact-active: #dddddd;
 }
 
 .dark-mode {
@@ -22,6 +26,10 @@
     --scrollbar-track: #2d2d2d;
     --scrollbar-thumb: #555;
     --scrollbar-thumb-hover: #666;
+    --button-bg: #333;
+    --button-bg-active: #1d1d1d;
+    --contact-hover: #242424;
+    --contact-active: #1c1c1c;
 }
 
 .messenger-button {
@@ -121,7 +129,11 @@
 }
 
 .contact-item:hover {
-    background-color: var(--messenger-input-bg);
+    background-color: var(--contact-hover);
+}
+
+.contact-item:active {
+    background-color: var(--contact-active);
 }
 
 .contact-avatar {
@@ -448,4 +460,40 @@ padding: 4px;
 
 #file-input {
     width: 10px;
+}
+
+.create-chat-container {
+    padding: 0.5vw;
+    background-color: var(--messenger-header-bg);
+    border-bottom: 1px solid var(--messenger-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 5vh;  
+}
+
+#create_chat_textarea {
+    border-radius: 1vh;
+    height: 4vh;
+    width: 15vw;
+    border: 2px solid var(--messenger-border);
+    background-color: var(--messenger-input-bg);
+    color: var(--messenger-text);
+}
+
+.create_chat {
+    border-radius: 1vh;
+    height: 5vh;
+    width: 2.5vw;
+    border: 2px solid var(--messenger-border);
+    background-color: var(--button-bg);
+    color: var(--messenger-text);
+}
+
+.create_chat:hover {
+    background-color: var(--messenger-header-bg);
+}
+
+.create_chat:active {
+    background-color: var(--button-bg-active);
 }

@@ -11,10 +11,11 @@ from flask_login import current_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
 from app import db, socketio, UPLOAD_FOLDER
-from app.base.models import User, Message, Attachment
+from app.base.models import User, Message, Attachment, AIChat
 from flask_login import login_required
 from werkzeug.utils import secure_filename
 from datetime import datetime
+from app.messanger.ai_routes import get_started_context
 
 
 CONTEXT_MENU_ITEMS = {
@@ -23,8 +24,8 @@ CONTEXT_MENU_ITEMS = {
         {"label": "Удалить", "action": "delete"},
     ],
     "media": [{"label": "Скачать", "action": "download"}],
+    "ai_chat": [{"label": "Удалить", "action": "delete_chat"}]
 }
-
 
 
 @blueprint.route("/messenger/contacts")
@@ -232,7 +233,6 @@ def get_context_menu():
     menu_items = CONTEXT_MENU_ITEMS.get(context_type, [])
     return jsonify({"items": menu_items})
 
-
 @blueprint.route("/api/execute-action", methods=["POST"])
 def execute_action():
     try:
@@ -240,7 +240,34 @@ def execute_action():
         action = data.get("action")
         element_data = data.get("element")
 
-        if action == "delete":
+        if action == "delete_chat":
+            # Обработка удаления чата ИИ
+            ai_chat_id = element_data.get("ai_chat_id")
+            if not ai_chat_id:
+                return jsonify({"status": "error", "message": "Не указан ai_chat_id"}), 400
+
+            ai_chat = db.session.get(AIChat, ai_chat_id)
+            if not ai_chat or ai_chat.user_id != current_user.id:
+                return jsonify({"status": "error", "message": "Чат с ИИ не найден"}), 404
+
+            # Удаляем все сообщения и вложения чата
+            messages = Message.query.filter_by(ai_chat_id=ai_chat_id).all()
+            for msg in messages:
+                for attachment in msg.attachments:
+                    db.session.delete(attachment)
+                db.session.delete(msg)
+            
+            # Удаляем сам чат
+            db.session.delete(ai_chat)
+            db.session.commit()
+            
+            return jsonify({
+                "status": "success",
+                "message": "Чат с ИИ удален",
+                "ai_chat_id": ai_chat_id
+            })
+
+        elif action == "delete":
             item_id = element_data.get("id")
             item = Message.query.get_or_404(item_id)
             if item.sender_id != current_user.id:
@@ -290,33 +317,70 @@ def execute_action():
             )
 
         elif action == "clear_history":
+            # Обработка clear_history
             recipient_id = element_data.get("recipient_id")
-            messages = Message.query.filter(
-                or_(
-                    and_(
-                        Message.sender_id == current_user.id,
-                        Message.recipient_id == recipient_id,
-                    ),
-                    and_(
-                        Message.sender_id == recipient_id,
-                        Message.recipient_id == current_user.id,
-                    ),
+            ai_chat_id = element_data.get("ai_chat_id")
+
+            if ai_chat_id:
+                # Очистка истории чата с ИИ
+                ai_chat = db.session.get(AIChat, ai_chat_id)
+                if not ai_chat or ai_chat.user_id != current_user.id:
+                    return jsonify(
+                        {
+                            "status": "error",
+                            "message": "Чат с ИИ не найден"
+                        }
+                    ), 404
+                ai_chat.context = get_started_context(ai_chat.id)
+                messages = Message.query.filter_by(ai_chat_id=ai_chat_id).all()
+                for msg in messages:
+                    for attachment in msg.attachments:
+                        db.session.delete(attachment)
+                    db.session.delete(msg)
+                db.session.commit()
+                return jsonify(
+                    {
+                        "status": "success",
+                        "message": "История чата с ИИ очищена",
+                        "ai_chat_id": ai_chat_id,
+                    }
                 )
-            ).all()
 
-            for msg in messages:
-                for attachment in msg.attachments:
-                    db.session.delete(attachment)
-                db.session.delete(msg)
+            elif recipient_id:
+                # Очистка истории обычного чата
+                messages = Message.query.filter(
+                    or_(
+                        and_(
+                            Message.sender_id == current_user.id,
+                            Message.recipient_id == recipient_id,
+                        ),
+                        and_(
+                            Message.sender_id == recipient_id,
+                            Message.recipient_id == current_user.id,
+                        ),
+                    )
+                ).all()
 
-            db.session.commit()
+                for msg in messages:
+                    for attachment in msg.attachments:
+                        db.session.delete(attachment)
+                    db.session.delete(msg)
+
+                db.session.commit()
+                return jsonify(
+                    {
+                        "status": "success",
+                        "message": "История чата очищена",
+                        "recipient_id": recipient_id,
+                    }
+                )
+
             return jsonify(
                 {
-                    "status": "success",
-                    "message": "История чата очищена",
-                    "recipient_id": recipient_id,
+                    "status": "error",
+                    "message": "Не указан recipient_id или ai_chat_id"
                 }
-            )
+            ), 400
         elif action == "download":
             return jsonify({"status": "success", "message": "Скаченно медиа"})
         else:
