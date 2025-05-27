@@ -84,9 +84,13 @@
     </div>
 
     <div class="input-container">
-        <input type="file" id="file-input" multiple accept="image/*,video/*,.pdf,.doc,.docx,.js,.html,.py,.cpp">
+        <label for="file-input" class="file-upload-button">
+            <i class="input-img"><img class="input-img" src="{{ url_for('static', filename='img/attach.svg') }}"></i>
+        </label>
+        <input type="file" id="file-input" class="hidden" multiple accept="image/*,video/*,.pdf,.doc,.docx,.js,.html,.py,.cpp">
         <textarea class="chat-input" placeholder="Напишите сообщение..." id="message-input" rows="1"></textarea>
-        <button class="send-button"><img src="{{ url_for('static', filename='img/icons/send.svg') }}" alt="sun"></button>
+        <button class="send-button"><img src="{{ url_for('static', filename='img/icons/send.svg') }}"
+                alt="sun"></button>
     </div>
   
 </div>

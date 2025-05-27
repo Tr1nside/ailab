@@ -77,7 +77,7 @@ def ide():
 @login_required
 def get_libraries(python_version):
     """Возвращает список сторонних библиотек, установленных в интерпретаторе."""
-    version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python3"}
+    version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python312"}
     python_executable = shutil.which(version_map.get(python_version, "python3"))
     if not python_executable:
         return jsonify(

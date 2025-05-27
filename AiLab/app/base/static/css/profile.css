@@ -355,12 +355,15 @@
     transition:
       background-color var(--transition-speed),
       box-shadow var(--transition-speed);
+    height: 70vh;
+    margin-top: 8vh;
   }
   
   .modal-title {
     font-size: 20px;
     font-family: Inter, sans-serif;
     margin-bottom: 20px;
+    margin-top: 0px;
     font-weight: 700;
     color: var(--text-primary);
     transition: color var(--transition-speed);

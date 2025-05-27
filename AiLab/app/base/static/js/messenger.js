@@ -173,7 +173,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
     // Загрузка чата с пользователем
-    function loadChat(userId) {
+    function loadChat(userId, savedText = '') {
         document.getElementById('messenger-header').classList.add('hidden');
         const messagesContainer = document.getElementById('messages-container');
         if (messagesContainer) {
@@ -185,6 +185,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('messenger-content').innerHTML = html;
                 formatMessageTimes(); // Форматирование времени
                 scrollToBottom();
+                // Восстанавливаем текст в textarea
+                const input = document.getElementById('message-input');
+                if (input && savedText) {
+                    input.value = savedText;
+                    input.style.height = 'auto';
+                    input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+                }
                 // Пометить сообщения как прочитанные
                 fetch(`/messenger/mark_as_read/${userId}`, {
                     method: 'POST',
@@ -348,21 +355,40 @@ document.addEventListener('DOMContentLoaded', function () {
         socketio.on('new_message', function (data) {
             formatMessageTimes();
             const badge = document.getElementById('unread-count');
-            if (badge && data.sender_id != current_user_id) {
+            const currentChat = document.querySelector('.chat-header');
+
+            // Проверяем, является ли чат с ИИ (наличие ai_chat_id) или с пользователем (наличие sender_id)
+            const isAIChat = !!data.ai_chat_id;
+
+            // Обновляем счетчик непрочитанных сообщений и проигрываем звук только для чатов с пользователями
+            if (!isAIChat && badge && data.sender_id != current_user_id) {
                 const currentCount = parseInt(badge.textContent) || 0;
                 badge.textContent = currentCount + 1;
                 badge.classList.remove('hidden');
+                playNotificationSound();
             }
-            playNotificationSound();
-            const currentChat = document.querySelector('.chat-header');
+
+            // Сохраняем содержимое textarea перед обновлением чата
+            const input = document.getElementById('message-input');
+            const currentText = input ? input.value : '';
+
+            // Обновляем чат, если он активен
             if (currentChat) {
-                const currentChatUserId = parseInt(currentChat.dataset.userId);
-                if (
-                    currentChatUserId === data.sender_id ||
-                    (currentChatUserId === data.recipient_id && data.sender_id === current_user_id)
-                ) {
-                    console.log('Updating chat for user:', currentChatUserId);
-                    loadChat(currentChatUserId); // Обновляем только активный чат
+                if (isAIChat) {
+                    const currentChatId = parseInt(currentChat.dataset.aiChatId);
+                    if (currentChatId === data.ai_chat_id) {
+                        console.log('Updating AI chat:', currentChatId);
+                        loadAIChat(currentChatId, currentText); // Передаем сохраненный текст
+                    }
+                } else {
+                    const currentChatUserId = parseInt(currentChat.dataset.userId);
+                    if (
+                        currentChatUserId === data.sender_id ||
+                        (currentChatUserId === data.recipient_id && data.sender_id === current_user_id)
+                    ) {
+                        console.log('Updating chat for user:', currentChatUserId);
+                        loadChat(currentChatUserId, currentText); // Передаем сохраненный текст
+                    }
                 }
             }
         });
@@ -450,7 +476,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Загрузка чата с ИИ
-    function loadAIChat(aiChatId) {
+    function loadAIChat(aiChatId, savedText = '') {
         document.getElementById('messenger-header').classList.add('hidden');
         const messagesContainer = document.getElementById('messages-container');
         if (messagesContainer) {
@@ -474,6 +500,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
                 formatMessageTimes(); // Форматирование времени
                 scrollToBottom();
+                // Восстанавливаем текст в textarea
+                const input = document.getElementById('message-input');
+                if (input && savedText) {
+                    input.value = savedText;
+                    input.style.height = 'auto';
+                    input.style.height = Math.min(input.scrollHeight, 150) + 'px';
+                }
                 attachAIChatListeners(aiChatId);
                 attachAttachmentListeners();
             })
@@ -539,19 +572,63 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         function sendAIMessage() {
+            const input = document.getElementById('message-input');
             const text = input.value.trim();
             const fileInput = document.getElementById('file-input');
-            const files = Array.from(fileInput.files); // Получаем текущие файлы
-        
+            const files = Array.from(fileInput.files);
+            const messagesContainer = document.getElementById('messages-container');
+
             if (!text && files.length === 0) return;
-        
+
+            // 1. Сразу отображаем сообщение пользователя
+            if (text) {
+                const messageElement = document.createElement('div');
+                const timeOnly = new Intl.DateTimeFormat('ru-RU', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                }).format(new Date());
+                messageElement.classList.add('message', 'message-sent');
+                messageElement.innerHTML = `
+                    <div class="message-text">${text.replace(/\n/g, '<br>')}</div>
+                    <div class="message-second-data">
+                        <div class="message-time" data-timestamp="${timeOnly}"></div>
+                    </div>
+                `;
+                messagesContainer.appendChild(messageElement);
+                formatMessageTimes(); // Форматируем время
+                scrollToBottom();
+            }
+
+            // 2. Отображаем индикатор "ИИ думает"
+            const thinkingElement = document.createElement('div');
+            thinkingElement.classList.add('message', 'message-incoming', 'thinking');
+            thinkingElement.innerHTML = `
+                <div class="message-content">
+                    <div class="message-text">ИИ думает...</div>
+                    <div class="message-time" data-timestamp="${new Date().toISOString()}"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(thinkingElement);
+            scrollToBottom();
+
+            // 3. Очищаем поля ввода
+            input.value = '';
+            input.style.height = 'auto'; // Сбрасываем высоту текстового поля
+            fileInput.value = ''; // Сбрасываем файлы
+            const newFileInput = document.createElement('input');
+            newFileInput.type = 'file';
+            newFileInput.id = 'file-input';
+            newFileInput.multiple = true;
+            newFileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.js,.html,.py,.cpp';
+            fileInput.parentNode.replaceChild(newFileInput, fileInput);
+
+            // 4. Отправляем запрос на сервер
             const form = new FormData();
             form.append('ai_chat_id', aiChatId);
             if (text) form.append('text', text);
-        
-            // Добавляем только текущие файлы
             files.forEach(f => form.append('files', f));
-        
+
             fetch('/messenger/ai/send', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': getCookie('csrf_token') },
@@ -560,23 +637,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        input.value = ''; // Очищаем текстовое поле
-                        // Полностью сбрасываем input type="file"
-                        fileInput.value = ''; // Сбрасываем значение
-                        // Пересоздаем input для полной очистки
-                        const newFileInput = document.createElement('input');
-                        newFileInput.type = 'file';
-                        newFileInput.id = 'file-input';
-                        newFileInput.multiple = true;
-                        newFileInput.accept = 'image/*,video/*,.pdf,.doc,.docx,.js,.html,.py,.cpp';
-                        fileInput.parentNode.replaceChild(newFileInput, fileInput);
-                        loadAIChat(aiChatId); // Перезагружаем чат
+                        // Удаляем индикатор "ИИ думает"
+                        thinkingElement.remove();
+                        // Перезагружаем чат для отображения ответа ИИ
+                        loadAIChat(aiChatId);
                     } else {
+                        // Удаляем индикатор и показываем ошибку
+                        thinkingElement.remove();
                         alert(data.error || 'Ошибка отправки');
                     }
                 })
                 .catch(error => {
                     console.error('Ошибка отправки сообщения:', error);
+                    thinkingElement.remove();
                     alert('Не удалось отправить сообщение');
                 });
         }

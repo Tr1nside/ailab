@@ -5,12 +5,17 @@
 </div>
 <ul class="contact-list">
     {% for chat in chats %}
+    <hr>
     <li class="contact-item context-area" data-ai-chat-id="{{ chat.id }}" data-context-type="ai_chat">
         <div class="contact-info">
             <p class="contact-name">{{ chat.name }}</p>
         </div>
     </li>
     {% else %}
-    <p>У вас пока нет чатов с ИИ</p>
+    <li class="contact-item">
+        <div class="contact-info">
+            <p class="contact-name">У вас пока нету чатов с ИИ.</p>
+        </div>
+    </li>
     {% endfor %}
 </ul>
