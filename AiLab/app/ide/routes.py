@@ -117,9 +117,9 @@ def get_libraries(python_version):
                     formatted_libraries.append(
                         {"name": lib["name"], "version": lib["version"]}
                     )
-            else: 
+            else:
                 print()
-                
+
         # Сортируем по имени
         formatted_libraries.sort(key=lambda x: x["name"])
         return jsonify(formatted_libraries)
