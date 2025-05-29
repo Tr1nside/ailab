@@ -136,7 +136,7 @@ def get_libraries(python_version):
 def get_presets():
     """Возвращает список пресетов пользователя."""
     user_id = current_user.id
-    presets_dir = os.path.join(USER_FILES_PATH, "context", str(user_id))
+    presets_dir = os.path.join(USER_FILES_PATH, "presets", str(user_id))
     os.makedirs(presets_dir, exist_ok=True)
     presets = []
     for preset_file in os.listdir(presets_dir):
@@ -177,7 +177,7 @@ def create_preset():
         ), 400
 
     # Проверяем, что библиотеки существуют в указанном интерпретаторе
-    version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python3"}
+    version_map = {"3.6": "python36", "3.9": "python39", "3.12": "python312"}
     python_executable = shutil.which(version_map.get(python_version, "python3"))
     if not python_executable:
         return jsonify(

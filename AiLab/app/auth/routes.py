@@ -73,6 +73,8 @@ def register():
             email=form.email.data,
         )
 
+        _create_user_profile(user, form)   
+
         qr_filename = generate_qr_code(user.id, user.email, False)
         user.profile.qr_photo = qr_filename
 
@@ -81,7 +83,7 @@ def register():
         qr_filename = generate_qr_code(user.id, user.email, True)
 
         filename = secure_filename("main.py")
-        save_path = os.path.join(USER_FILES_PATH, f"/{current_user.id}" + filename)
+        save_path = os.path.join(USER_FILES_PATH, f"/{user.id}" + filename)
 
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
         with open(save_path, "w") as f:
