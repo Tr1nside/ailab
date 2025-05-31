@@ -1,4 +1,4 @@
-from app import USER_FILES_PATH
+from app.base.config import USER_FILES_PATH
 from flask import request
 from threading import Thread
 import importlib.util
@@ -12,6 +12,7 @@ import json
 import shutil
 
 pending_inputs = {}
+
 
 def register_socketio_events(socketio):
     """

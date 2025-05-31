@@ -13,7 +13,7 @@ from app.base.models import UserProfile
 from app.base.forms import ProfileEditForm
 from werkzeug.utils import secure_filename
 from os import path
-from app import UPLOAD_FOLDER
+from app.base.config import UPLOAD_FOLDER
 
 
 @blueprint.route("/profile/<int:id>", methods=["GET", "POST"])

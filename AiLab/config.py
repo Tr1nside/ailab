@@ -1,6 +1,7 @@
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
+UPLOAD_FOLDER = os.path.join(basedir, "./app/base/static/uploads")
 
 
 class Config:
@@ -8,6 +9,6 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL"
     ) or "sqlite:///" + os.path.join(basedir, "app.db")
-    UPLOAD_FOLDER = os.path.join(basedir, "app/static/uploads")
+    UPLOAD_FOLDER = UPLOAD_FOLDER
     MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100MB
     SEND_FILE_MAX_AGE_DEFAULT = 0

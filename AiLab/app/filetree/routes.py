@@ -7,14 +7,13 @@ from flask import (
 )
 import os
 from flask_login import current_user
-from app import UPLOAD_FOLDER, USER_FILES_PATH
+from app.base.config import UPLOAD_FOLDER, USER_FILES_PATH
 from flask_login import login_required
 from datetime import datetime
 import shutil
 from pathlib import Path
 from typing import List, TypedDict, Union, Dict, Any, Optional
 from werkzeug.wrappers import Response as WerkzeugResponse
-import icecream as ic
 
 
 class FileTreeItem(TypedDict):

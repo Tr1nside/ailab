@@ -4,17 +4,14 @@ from flask_socketio import SocketIO
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from importlib import import_module
-from os import path
 
-appdir = path.abspath(path.dirname(__file__))
-USER_FILES_PATH = path.join(appdir, "./base/user_files")
-UPLOAD_FOLDER = path.join(appdir, "./base/static/uploads")
 
 # Инициализация расширений
 db = SQLAlchemy()
 login_manager = LoginManager()
 socketio = SocketIO(cors_allowed_origins="*", engineio_logger=True, logger=True)
 migrate = Migrate()
+
 
 def _register_socketio(app):
     """Инициализация SocketIO"""
@@ -23,12 +20,14 @@ def _register_socketio(app):
     socketio.init_app(app)
     register_socketio_events(socketio)
 
+
 def _register_extensions(app):
     """Инициализация всех расширений (SQLAlchemy, LoginManager, SocketIO, Migrate)"""
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)  # Инициализация Flask-Migrate
     _register_socketio(app)
+
 
 def _register_blueprints(app):
     """Регистрация blueprints"""
@@ -45,6 +44,7 @@ def _register_blueprints(app):
         module = import_module(f"app.{module_name}.routes")
         app.register_blueprint(module.blueprint)
 
+
 def _configure_database(app):
     """Настройка базы данных"""
     # Инициализация базы данных и создание таблиц
@@ -55,6 +55,7 @@ def _configure_database(app):
     @app.teardown_request
     def shutdown_session(exception=None):
         db.session.remove()
+
 
 def create_app(config):
     """Создание приложения Flask"""

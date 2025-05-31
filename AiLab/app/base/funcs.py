@@ -2,6 +2,7 @@ import qrcode
 import os
 from qrcode.image.svg import SvgPathImage
 from typing import NamedTuple
+from app.base.config import QR_FOLDER
 
 
 class QrPathData(NamedTuple):
@@ -26,8 +27,6 @@ def _generate_qr_obj(profile_url: str) -> qrcode.QRCode:
 
 
 def _create_qr_path(email: str) -> QrPathData:
-    appdir = os.path.abspath(os.path.dirname(__file__))
-    QR_FOLDER = os.path.join(appdir, "../static/qrcodes")
     filename = f"qr_{email}.svg"
     save_path = os.path.join(QR_FOLDER, filename)
 

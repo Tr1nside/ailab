@@ -10,7 +10,8 @@ import os
 from flask_login import current_user
 from sqlalchemy.orm import joinedload
 from sqlalchemy import or_, and_
-from app import db, socketio, UPLOAD_FOLDER
+from app import db, socketio
+from app.base.config import UPLOAD_FOLDER
 from app.base.models import User, Message, Attachment, AIChat
 from flask_login import login_required
 from werkzeug.utils import secure_filename
@@ -24,7 +25,7 @@ CONTEXT_MENU_ITEMS = {
         {"label": "Удалить", "action": "delete"},
     ],
     "media": [{"label": "Скачать", "action": "download"}],
-    "ai_chat": [{"label": "Удалить", "action": "delete_chat"}]
+    "ai_chat": [{"label": "Удалить", "action": "delete_chat"}],
 }
 
 
@@ -233,6 +234,7 @@ def get_context_menu():
     menu_items = CONTEXT_MENU_ITEMS.get(context_type, [])
     return jsonify({"items": menu_items})
 
+
 @blueprint.route("/api/execute-action", methods=["POST"])
 def execute_action():
     try:
@@ -244,11 +246,15 @@ def execute_action():
             # Обработка удаления чата ИИ
             ai_chat_id = element_data.get("ai_chat_id")
             if not ai_chat_id:
-                return jsonify({"status": "error", "message": "Не указан ai_chat_id"}), 400
+                return jsonify(
+                    {"status": "error", "message": "Не указан ai_chat_id"}
+                ), 400
 
             ai_chat = db.session.get(AIChat, ai_chat_id)
             if not ai_chat or ai_chat.user_id != current_user.id:
-                return jsonify({"status": "error", "message": "Чат с ИИ не найден"}), 404
+                return jsonify(
+                    {"status": "error", "message": "Чат с ИИ не найден"}
+                ), 404
 
             # Удаляем все сообщения и вложения чата
             messages = Message.query.filter_by(ai_chat_id=ai_chat_id).all()
@@ -256,16 +262,18 @@ def execute_action():
                 for attachment in msg.attachments:
                     db.session.delete(attachment)
                 db.session.delete(msg)
-            
+
             # Удаляем сам чат
             db.session.delete(ai_chat)
             db.session.commit()
-            
-            return jsonify({
-                "status": "success",
-                "message": "Чат с ИИ удален",
-                "ai_chat_id": ai_chat_id
-            })
+
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "Чат с ИИ удален",
+                    "ai_chat_id": ai_chat_id,
+                }
+            )
 
         elif action == "delete":
             item_id = element_data.get("id")
@@ -326,10 +334,7 @@ def execute_action():
                 ai_chat = db.session.get(AIChat, ai_chat_id)
                 if not ai_chat or ai_chat.user_id != current_user.id:
                     return jsonify(
-                        {
-                            "status": "error",
-                            "message": "Чат с ИИ не найден"
-                        }
+                        {"status": "error", "message": "Чат с ИИ не найден"}
                     ), 404
                 ai_chat.context = get_started_context(ai_chat.id)
                 messages = Message.query.filter_by(ai_chat_id=ai_chat_id).all()
@@ -376,10 +381,7 @@ def execute_action():
                 )
 
             return jsonify(
-                {
-                    "status": "error",
-                    "message": "Не указан recipient_id или ai_chat_id"
-                }
+                {"status": "error", "message": "Не указан recipient_id или ai_chat_id"}
             ), 400
         elif action == "download":
             return jsonify({"status": "success", "message": "Скаченно медиа"})

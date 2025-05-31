@@ -1,5 +1,5 @@
-from app.AI.ai import ask_bot
+from app.AI.ai import AI_BOT_V3
 
-__all__ = [
-    "ask_bot"
-]
+bot = AI_BOT_V3()
+
+__all__ = ["AI_BOT_V3"]

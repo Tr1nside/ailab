@@ -1,7 +1,8 @@
 from flask import render_template, request, jsonify
 from flask_login import current_user, login_required
 from app.ide import blueprint
-from app import db, USER_FILES_PATH
+from app import db
+from app.base.config import USER_FILES_PATH
 import sqlalchemy as sa
 from app.base.models import UserProfile
 import subprocess

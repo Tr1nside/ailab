@@ -8,11 +8,16 @@ from flask import (
 import os
 from flask_login import current_user
 from sqlalchemy.orm import joinedload
-from app import db, socketio, UPLOAD_FOLDER
+from app import db, socketio
+from app.base.config import UPLOAD_FOLDER, USER_FILES_PATH
 from app.base.models import Message, Attachment, AIChat
 from flask_login import login_required
 from werkzeug.utils import secure_filename
-from app.AI import ask_bot
+from app.AI import AI_BOT_V3
+
+
+bot = AI_BOT_V3()
+
 
 @blueprint.route("/messenger/ai/contacts")
 @login_required
@@ -238,6 +243,7 @@ def ai_mark_message_read(message_id):
     db.session.commit()
     return jsonify({"success": True})
 
+
 @blueprint.route("/messenger/ai/create_chat", methods=["POST"])
 @login_required
 def create_ai_chat():
@@ -247,44 +253,60 @@ def create_ai_chat():
             return jsonify({"success": False, "error": "Invalid JSON data"}), 400
 
         chat_name = data.get("name")
-        if not chat_name or not isinstance(chat_name, str) or len(chat_name.strip()) == 0:
+        if (
+            not chat_name
+            or not isinstance(chat_name, str)
+            or len(chat_name.strip()) == 0
+        ):
             return jsonify({"success": False, "error": "Chat name is required"}), 400
 
         # Создаём новый чат ИИ
         ai_chat = AIChat(
             user_id=current_user.id,
-            name=chat_name.strip()  # Значение по умолчанию
+            name=chat_name.strip(),  # Значение по умолчанию
         )
         ai_chat.context = get_started_context(ai_chat.id)
         db.session.add(ai_chat)
         db.session.commit()
 
-        return jsonify({
-            "success": True,
-            "ai_chat": {
-                "id": ai_chat.id,
-                "name": ai_chat.name,
-                "created_at": ai_chat.created_at.isoformat()
+        return jsonify(
+            {
+                "success": True,
+                "ai_chat": {
+                    "id": ai_chat.id,
+                    "name": ai_chat.name,
+                    "created_at": ai_chat.created_at.isoformat(),
+                },
             }
-        })
+        )
 
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
 
+
 def _ai_response(text, ai_chat_id):
-    # Получаем чат ИИ
-    ai_chat = AIChat.query.filter_by(id=ai_chat_id, user_id=current_user.id).first_or_404()
-    
-    current_context = ai_chat.context or ""
-    
-    updated_context, ai_response = ask_bot(text, current_context)
-    
-    ai_chat.context = updated_context
-    db.session.commit()
-    
-    return ai_response
+    try:
+        # Получаем чат ИИ
+        ai_chat = AIChat.query.filter_by(
+            id=ai_chat_id, user_id=current_user.id
+        ).first_or_404()
+
+        context_path = ai_chat.context
+
+        ai_response = bot.ask(prompt=text, context_path=context_path, file_context=[])
+
+        # updated_context = f"{current_context}\n\n[{text}"
+        # for_ai_context = f"{current_context}\n\n{text}"
+        # ai_response = f"Контекст:\n {for_ai_context}"
+        # updated_context = f"{updated_context}\n\nИИ:{ai_response} ]"
+
+        return ai_response
+    except Exception as e:
+        print(str(e))
 
 
 def get_started_context(ai_chat_id):
-    return f"{current_user.id}-{ai_chat_id}.json"
+    return os.path.join(
+        USER_FILES_PATH, "context", f"{current_user.id}-{ai_chat_id}.json"
+    )

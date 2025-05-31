@@ -9,13 +9,14 @@ from flask_login import current_user
 from app.auth import blueprint
 from app.base.models import User, UserProfile
 from app.base.forms import LoginForm, RegistrationForm
-from app import db, USER_FILES_PATH
+from app import db
 from urllib.parse import urlsplit
 from flask_login import login_user, logout_user
 from werkzeug.utils import secure_filename
 from app.base.funcs import generate_qr_code
 import sqlalchemy as sa
 import os
+from app.base.config import USER_FILES_PATH
 
 
 @blueprint.route("/login", methods=["GET", "POST"])
@@ -55,7 +56,9 @@ def _create_user_profile(user: User, form: RegistrationForm):
         form.last_name.data, form.first_name.data, form.middle_name.data
     )
 
-    user.profile = UserProfile(email=form.email.data, full_name=full_name)
+    user.profile = UserProfile(
+        email=form.email.data, full_name=full_name, phone="", position=""
+    )
     user.set_password(form.password.data)
     user.profile.profile_photo = "standart.png"
 
@@ -73,7 +76,7 @@ def register():
             email=form.email.data,
         )
 
-        _create_user_profile(user, form)   
+        _create_user_profile(user, form)
 
         qr_filename = generate_qr_code(user.id, user.email, False)
         user.profile.qr_photo = qr_filename
