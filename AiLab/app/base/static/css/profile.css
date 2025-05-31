@@ -136,7 +136,7 @@
     border-radius: 10px;
     overflow: hidden;
     position: relative;
-    background-color: #f5f5f5;
+    background-color: var(--bg-secondary);
   }
   
   .profile-photo {
@@ -144,6 +144,7 @@
     height: 100%;
     object-fit: cover;
     display: block;
+    background-color: var(--bg-secondary);
   }
   
   .profile-video {
