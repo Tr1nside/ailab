@@ -583,16 +583,13 @@ document.addEventListener('DOMContentLoaded', function () {
             // 1. Сразу отображаем сообщение пользователя
             if (text) {
                 const messageElement = document.createElement('div');
-                const timeOnly = new Intl.DateTimeFormat('ru-RU', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                }).format(new Date());
+                const now = new Date();
+                const timeOnly = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
                 messageElement.classList.add('message', 'message-sent');
                 messageElement.innerHTML = `
                     <div class="message-text">${text.replace(/\n/g, '<br>')}</div>
                     <div class="message-second-data">
-                        <div class="message-time" data-timestamp="${timeOnly}"></div>
+                        <div class="message-time" data-timestamp="${timeOnly}">${timeOnly}</div>
                     </div>
                 `;
                 messagesContainer.appendChild(messageElement);

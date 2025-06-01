@@ -28,6 +28,18 @@ CONTEXT_MENU_ITEMS = {
     "ai_chat": [{"label": "Удалить", "action": "delete_chat"}],
 }
 
+def _clear_context(context_path: str) -> None:
+    try:
+        with open(context_path, 'w', encoding='utf-8') as file:
+            file.write('[]')
+        print(f"Файл {context_path} успешно очищен.")
+    except FileNotFoundError:
+        print(f"Ошибка: Файл {context_path} не найден.")
+    except PermissionError:
+        print(f"Ошибка: Нет прав доступа к файлу {context_path}.")
+    except Exception as e:
+        print(f"Произошла ошибка: {e}")
+
 
 @blueprint.route("/messenger/contacts")
 @login_required
@@ -337,6 +349,7 @@ def execute_action():
                         {"status": "error", "message": "Чат с ИИ не найден"}
                     ), 404
                 ai_chat.context = get_started_context(ai_chat.id)
+                _clear_context(ai_chat.context)
                 messages = Message.query.filter_by(ai_chat_id=ai_chat_id).all()
                 for msg in messages:
                     for attachment in msg.attachments:

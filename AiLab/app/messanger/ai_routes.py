@@ -14,7 +14,7 @@ from app.base.models import Message, Attachment, AIChat
 from flask_login import login_required
 from werkzeug.utils import secure_filename
 from app.AI import AI_BOT_V3
-
+from icecream import ic
 
 bot = AI_BOT_V3()
 
@@ -163,10 +163,12 @@ def send_ai_message():
                     continue
                 filename = secure_filename(f"{message.id}_{f.filename}")
                 save_path = os.path.join(UPLOAD_FOLDER, filename)
+                ic(UPLOAD_FOLDER)
                 f.save(save_path)
-                file_url = url_for(
-                    "static", filename=f"uploads/{filename}", _external=True
-                )
+                # file_url = url_for(
+                #     "static", filename=f"uploads/{filename}", _external=True
+                # )
+                file_url = save_path
                 attach = Attachment(
                     message_id=message.id, url=file_url, mime_type=f.mimetype
                 )
@@ -177,7 +179,7 @@ def send_ai_message():
 
         # Заглушка: создаём ответное сообщение "Сообщение прочитано", если есть текст
         if text:
-            ai_response = _ai_response(text, ai_chat_id)
+            ai_response = _ai_response(text, ai_chat_id, attachments_data)
             ai_message = Message(
                 ai_chat_id=ai_chat_id,
                 text=ai_response.replace("\n", "<br>"),
@@ -285,21 +287,24 @@ def create_ai_chat():
         return jsonify({"success": False, "error": str(e)}), 500
 
 
-def _ai_response(text, ai_chat_id):
+def _ai_response(text, ai_chat_id, attachments_data):
     try:
         # Получаем чат ИИ
         ai_chat = AIChat.query.filter_by(
             id=ai_chat_id, user_id=current_user.id
         ).first_or_404()
 
+        files = []
+        for file in attachments_data:
+            files.append(file["url"])
+
+        ic(files)
+
         context_path = ai_chat.context
 
-        ai_response = bot.ask(prompt=text, context_path=context_path, file_context=[])
+        current_user_id = str(current_user.id)
 
-        # updated_context = f"{current_context}\n\n[{text}"
-        # for_ai_context = f"{current_context}\n\n{text}"
-        # ai_response = f"Контекст:\n {for_ai_context}"
-        # updated_context = f"{updated_context}\n\nИИ:{ai_response} ]"
+        ai_response = bot.ask(prompt=text, context_path=context_path, userid=current_user_id, file_context=files)
 
         return ai_response
     except Exception as e:
@@ -307,6 +312,14 @@ def _ai_response(text, ai_chat_id):
 
 
 def get_started_context(ai_chat_id):
-    return os.path.join(
-        USER_FILES_PATH, "context", f"{current_user.id}-{ai_chat_id}.json"
+    file_path = os.path.join(
+        USER_FILES_PATH, "context", str(current_user.id) , f"{current_user.id}-{ai_chat_id}.json"
     )
+    user_folder = os.path.join(
+        USER_FILES_PATH, "context", str(current_user.id)
+    )
+    os.makedirs(user_folder, exist_ok=True)
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write('[]')
+    return file_path
+

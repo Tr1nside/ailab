@@ -13,5 +13,5 @@ Migrate(app, db)
 if __name__ == "__main__":
     # Запускаем сервер через SocketIO с eventlet
     socketio.run(
-        app, host="0.0.0.0", port=5000, debug=False
+        app, host="0.0.0.0", port=5000, debug=True
     )  # debug=False для продакшена
