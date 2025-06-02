@@ -154,7 +154,8 @@ def get_presets():
                         "python_version": preset_data.get("python_version", "3.12"),
                     }
                 )
-            except:
+            except Exception as e:
+                print(f"Error in get_presets function: {e}")
                 continue
     return jsonify(presets)
 

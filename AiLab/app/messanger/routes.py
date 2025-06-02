@@ -28,10 +28,11 @@ CONTEXT_MENU_ITEMS = {
     "ai_chat": [{"label": "Удалить", "action": "delete_chat"}],
 }
 
+
 def _clear_context(context_path: str) -> None:
     try:
-        with open(context_path, 'w', encoding='utf-8') as file:
-            file.write('[]')
+        with open(context_path, "w", encoding="utf-8") as file:
+            file.write("[]")
         print(f"Файл {context_path} успешно очищен.")
     except FileNotFoundError:
         print(f"Ошибка: Файл {context_path} не найден.")
