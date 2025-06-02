@@ -187,7 +187,6 @@ class AI_BOT_V3:
         result = {'output': ''}
         try:
             # Load user and admin wishes
-            user_wishes = self._load_wish(userid)
             admin_wishes = self._load_admin_wishes()
 
             # Initialize model
@@ -221,7 +220,6 @@ class AI_BOT_V3:
                 """ + f"""
                         ### Context:
                         Admin Wishes: {admin_wishes}
-                        User Wishes: {user_wishes}
                         Available Files: {file_context}
                         """ + """
                         ### Response Format:
