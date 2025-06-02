@@ -4,10 +4,18 @@ from typing import Dict
 
 from langchain_ollama import OllamaLLM
 from langchain_community.document_loaders import (
-    PyPDFLoader, Docx2txtLoader, TextLoader, UnstructuredFileLoader,
-    UnstructuredWordDocumentLoader, UnstructuredRTFLoader, UnstructuredExcelLoader,
-    UnstructuredPowerPointLoader, CSVLoader, UnstructuredHTMLLoader,
-    UnstructuredEPubLoader, UnstructuredMarkdownLoader, UnstructuredEmailLoader
+    PyPDFLoader,
+    Docx2txtLoader,
+    TextLoader,
+    UnstructuredFileLoader,
+    UnstructuredRTFLoader,
+    UnstructuredExcelLoader,
+    UnstructuredPowerPointLoader,
+    CSVLoader,
+    UnstructuredHTMLLoader,
+    UnstructuredEPubLoader,
+    UnstructuredMarkdownLoader,
+    UnstructuredEmailLoader,
 )
 from langchain.chains.conversation.base import ConversationChain
 from diffusers import StableDiffusionXLPipeline
@@ -64,28 +72,31 @@ class CurrencyConverter:
 
 
 class Code:
-    def __init__(self, code_llm='deepseek-coder-v2:16b'):
+    def __init__(self, code_llm="deepseek-coder-v2:16b"):
         # Инициализация модели для генерации кода
         self.code_llm = OllamaLLM(model=code_llm, num_gpu=63)
         self.currency_converter = CurrencyConverter()
 
     def ask_code(self, prompt: Dict) -> str:
-
         question: str = prompt["question"]
         file_context: str = str(prompt["file_context"])
         file_text: str = prompt["file_text"]
 
-        cleaned = file_context.replace("[", '').replace(']', '').replace("'", "").replace('"', '')
+        cleaned = (
+            file_context.replace("[", "")
+            .replace("]", "")
+            .replace("'", "")
+            .replace('"', "")
+        )
         file_context = cleaned.split(",")
-        file_ctx = ''
-        if file_context and file_context != ['']:
+        file_ctx = ""
+        if file_context and file_context != [""]:
             for file in file_context:
                 file = file.strip()
                 if file:
-                    file_ctx += (
-                        f'Название файла {file} : Информация из файла {self.currency_converter.load_file(file)}\n')
+                    file_ctx += f"Название файла {file} : Информация из файла {self.currency_converter.load_file(file)}\n"
         else:
-            file_ctx = ''
+            file_ctx = ""
 
         conversation = ConversationChain(llm=self.code_llm)
         full_input = f"""
@@ -103,7 +114,7 @@ class Code:
         ### Ответ:
         """
         response = conversation.predict(input=full_input)
-        return f'Готовый код: {response}'
+        return f"Готовый код: {response}"
 
 
 class GenerationPhoto:
@@ -115,9 +126,7 @@ class GenerationPhoto:
         try:
             model_id = "stabilityai/stable-diffusion-xl-base-1.0"
             pipe = StableDiffusionXLPipeline.from_pretrained(
-                model_id,
-                torch_dtype=torch.float16,
-                variant="fp16"
+                model_id, torch_dtype=torch.float16, variant="fp16"
             )
             pipe = pipe.to("cuda")
 
@@ -126,9 +135,12 @@ class GenerationPhoto:
             # Сохраняем изображение в текущей директории
             output_dir = os.path.join(os.getcwd(), "generated_images")
             os.makedirs(output_dir, exist_ok=True)
-            save_path = os.path.join(output_dir, f"generated_image_{int(torch.randint(0, 1000000, (1,)).item())}.png")
+            save_path = os.path.join(
+                output_dir,
+                f"generated_image_{int(torch.randint(0, 1000000, (1,)).item())}.png",
+            )
             image.save(save_path)
-            return f'Файл создан: {save_path}'
+            return f"Файл создан: {save_path}"
         except Exception as e:
             return f"Ошибка: {str(e)}"
 
@@ -138,8 +150,8 @@ class AnalysisPhoto:
         # Проверка доступности CUDA и инициализация клиента ollama
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         try:
-            self.client = Client(host='http://localhost:11434')
-            self.client.generate(model='llava', prompt="test", stream=False)
+            self.client = Client(host="http://localhost:11434")
+            self.client.generate(model="llava", prompt="test", stream=False)
         except Exception as e:
             print(f"Ошибка подключения к серверу ollama: {str(e)}")
             raise
@@ -147,8 +159,8 @@ class AnalysisPhoto:
     def _image_to_base64(self, img: Image.Image) -> str:
         # Преобразование изображения в строку base64
         buffered = io.BytesIO()
-        if img.mode == 'RGBA':
-            img = img.convert('RGB')
+        if img.mode == "RGBA":
+            img = img.convert("RGB")
         img.save(buffered, format="JPEG")
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
@@ -157,15 +169,15 @@ class AnalysisPhoto:
             print(f"Attempting to open image: {image_path}")
             img = Image.open(image_path)
             base64_img = self._image_to_base64(img)
-            print(f"Image loaded successfully, sending to llava")
+            print("Image loaded successfully, sending to llava")
             response = self.client.generate(
-                model='llava',
+                model="llava",
                 prompt=question,
                 images=[base64_img],
                 stream=False,
-                options={"num_gpu": -1}
+                options={"num_gpu": -1},
             )
-            return f'Описание от вопроса: {response["response"]}'
+            return f"Описание от вопроса: {response['response']}"
         except Exception as e:
             return f"Ошибка: {str(e)}"
 

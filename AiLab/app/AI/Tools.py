@@ -3,7 +3,7 @@ import json
 from langchain_core.tools import tool
 
 from typing import Dict
-from app.AI.TechTool import CurrencyConverter, Code, GenerationPhoto, AnalysisPhoto, InternetSearch, ImageAnalysisInput
+from app.AI.TechTool import CurrencyConverter, Code, GenerationPhoto, AnalysisPhoto
 
 
 @tool
@@ -18,11 +18,13 @@ def AnalyzeImageTool(input_data: str) -> str:
 
     return analysis_photo_tool.ask_llava(image_path, question)
 
+
 @tool
 def LoadFileTool(file_path) -> str:
     """Загружает содержимое файла в зависимости от его формата. Поддерживает PDF, DOCX, TXT, RTF, XLSX, PPTX, CSV, HTML, EPUB, MD, EML."""
     currency_converter = CurrencyConverter()
     return currency_converter.load_file(file_path)
+
 
 @tool
 def GenerateCodeTool(prompt: Dict) -> str:
@@ -30,11 +32,13 @@ def GenerateCodeTool(prompt: Dict) -> str:
     code_tool = Code()
     return code_tool.ask_code(prompt)
 
+
 @tool
 def GenerateImageTool(prompt: str) -> str:
     """Генерирует изображение по текстовому описанию с помощью Stable Diffusion"""
     gen_photo_tool = GenerationPhoto()
     return gen_photo_tool.gen_img(prompt)
+
 
 class AITools:
     def __init__(self):

@@ -2,7 +2,6 @@ from app.messanger import blueprint
 from flask import (
     render_template,
     request,
-    url_for,
     jsonify,
 )  # Импортируем необходимые модули из Flask
 import os
@@ -304,7 +303,12 @@ def _ai_response(text, ai_chat_id, attachments_data):
 
         current_user_id = str(current_user.id)
 
-        ai_response = bot.ask(prompt=text, context_path=context_path, userid=current_user_id, file_context=files)
+        ai_response = bot.ask(
+            prompt=text,
+            context_path=context_path,
+            userid=current_user_id,
+            file_context=files,
+        )
 
         return ai_response
     except Exception as e:
@@ -313,13 +317,13 @@ def _ai_response(text, ai_chat_id, attachments_data):
 
 def get_started_context(ai_chat_id):
     file_path = os.path.join(
-        USER_FILES_PATH, "context", str(current_user.id) , f"{current_user.id}-{ai_chat_id}.json"
+        USER_FILES_PATH,
+        "context",
+        str(current_user.id),
+        f"{current_user.id}-{ai_chat_id}.json",
     )
-    user_folder = os.path.join(
-        USER_FILES_PATH, "context", str(current_user.id)
-    )
+    user_folder = os.path.join(USER_FILES_PATH, "context", str(current_user.id))
     os.makedirs(user_folder, exist_ok=True)
-    with open(file_path, 'w', encoding='utf-8') as file:
-        file.write('[]')
+    with open(file_path, "w", encoding="utf-8") as file:
+        file.write("[]")
     return file_path
-
