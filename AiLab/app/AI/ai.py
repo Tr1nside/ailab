@@ -19,12 +19,13 @@ from app.AI.Tools import AITools
 from pathlib import Path
 from langchain.agents import create_react_agent, AgentExecutor
 from typing import List
+from app.base.config import USER_FILES_PATH
 
 
 class AI_BOT_V3:
     def __init__(self):
-        self.base_path = Path('.')
-        self.global_wish_path = 'admin_wish.json'
+        self.base_path = Path(USER_FILES_PATH)
+        self.global_wish_path = USER_FILES_PATH /'context' / 'admin_wish.json'
         self.tools = AITools().get_all_tools()
         self.tools_name = AITools().get_all_tools_name()
 
@@ -43,7 +44,7 @@ class AI_BOT_V3:
         """
         try:
             # Создаем директорию для файла, если она не существует
-            context_path = self.base_path / context_file
+            context_path = context_file
             context_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Инициализируем историю чата
@@ -84,7 +85,7 @@ class AI_BOT_V3:
         """
         try:
             # Создаем директорию для файла, если она не существует
-            context_path = self.base_path / context_file
+            context_path = context_file
             context_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Инициализируем историю чата
@@ -106,7 +107,7 @@ class AI_BOT_V3:
 
     # Wish User and Admin---------------------------------------------------------------------------------------------->
     def _ensure_user_wish_file(self, user_id: str) -> Path:
-        user_dir = self.base_path / user_id
+        user_dir = self.base_path / "context" / user_id
         user_dir.mkdir(exist_ok=True)
         wish_file = user_dir / "UserWish.json"
 
