@@ -294,8 +294,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             li.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
-                if (li.dataset.type === 'file') {
-                    postData = {
+                const extension = li.dataset.path.split('.').pop().toLowerCase();
+                const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
+                const isImage = imageExtensions.includes(extension);
+                console.log('Двойной клик на:', li.dataset.path, 'Расширение:', extension, 'Это изображение:', isImage);
+
+                if (li.dataset.type === 'file' && !isImage) {
+                    // Существующая логика для не-изображений
+                    const postData = {
                         action: 'read_file',
                         element: { path: li.dataset.path },
                     };
@@ -314,14 +320,60 @@ document.addEventListener('DOMContentLoaded', function () {
                             return response.json();
                         })
                         .then(data => {
-                            console.log('Response data:', data);
+                            console.log('Ответ сервера:', data);
                             if (data.status === 'success') {
                                 window.openFileInTab(li.dataset.path, data.content);
                             } else {
-                                alert(`Ошибка: ${data.message}`);
+                                showNotification(`Ошибка: ${data.message}`);
                             }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при загрузке файла:', error);
+                            showNotification('Не удалось загрузить файл');
                         });
-                }
+                } //  else if (li.dataset.type === 'file' && isImage) {
+                //     // Логика для открытия изображений
+                //     const filePath = li.dataset.path;
+                //     const filetreeButton = document.querySelector('.filetree-icon');
+                //     const userId = filetreeButton ? filetreeButton.dataset.userId : null;
+                //     const staticPath = `/user_files/${userId}`;
+                //     const src = `${staticPath}/${filePath}`;
+                //     console.log('URL изображения:', src);
+
+
+                //     console.log('Открываем модальное окно для:', src);
+                //     const modal = document.createElement('div');
+                //     modal.style.cssText = `
+                //         background: rgba(0, 0, 0, 0.9) url(${src}) no-repeat center;
+                //         background-size: contain;
+                //         width: 100%;
+                //         height: 100%;
+                //         position: fixed;
+                //         top: 0;
+                //         left: 0;
+                //         z-index: 100000;
+                //         cursor: zoom-out;
+                //         opacity: 0;
+                //         transition: opacity 0.3s ease;
+                //     `;
+                    
+                //     function closeModal() {
+                //         document.body.removeChild(modal);
+                //         document.removeEventListener('keyup', closeOnEscape);
+                //     }
+                    
+                //     function closeOnEscape(e) {
+                //         if (e.key === 'Escape') {
+                //             closeModal();
+                //         }
+                //     }
+                    
+                //     modal.addEventListener('click', closeModal);
+                //     document.addEventListener('keyup', closeOnEscape);
+                //     document.body.appendChild(modal);
+                //     setTimeout(() => modal.style.opacity = '1', 10);
+                        
+                // }
             });
     
             li.addEventListener('contextmenu', (e) => {

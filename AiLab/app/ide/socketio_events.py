@@ -10,9 +10,10 @@ import os
 import sys
 import json
 import shutil
+from icecream import ic
 
 pending_inputs = {}
-
+active_processes = {}  # Словарь для хранения активных процессов по sid
 
 def register_socketio_events(socketio):
     """
@@ -66,6 +67,13 @@ def register_socketio_events(socketio):
             with open(preset_path, "r", encoding="utf-8") as f:
                 preset_data = json.load(f)
             allowed_libraries = set(preset_data.get("libraries", []))
+            
+            allowed_libraries.add('cv2')
+            allowed_libraries.add('matplotlib.pyplot')
+            allowed_libraries.add('matplotlib.image')
+            allowed_libraries.add('tensorflow.keras.layers')
+            allowed_libraries.add('tensorflow.keras.datasets')
+            
             preset_python_version = preset_data.get("python_version", "3.12")
             if preset_python_version != python_version:
                 socketio.emit(
@@ -146,6 +154,9 @@ import builtins
 import os
 os.environ["PYTHONIOENCODING"] = "utf-8"
 
+# Устанавливаем текущую рабочую директорию
+os.chdir("{}")
+
 # Перенаправляем ввод/вывод
 def custom_input(prompt=""):
     print(json.dumps({{"type": "input_request", "prompt": prompt}}))
@@ -170,7 +181,7 @@ sys.path.insert(0, "{}")
 """
         temp_file_path = os.path.join(user_dir, f"temp_{sid}.py")
         try:
-            wrapper_code = wrapper_code.format(escaped_user_dir, code)
+            wrapper_code = wrapper_code.format(escaped_user_dir, escaped_user_dir, code)
             with open(temp_file_path, "w", encoding="utf-8") as temp_file:
                 temp_file.write(wrapper_code)
         except Exception as e:
@@ -193,8 +204,20 @@ sys.path.insert(0, "{}")
                 env={**os.environ, "PYTHONIOENCODING": "utf-8"},
             )
 
+            # Сохраняем процесс в active_processes
+            active_processes[sid] = (process, temp_file_path)
+
             def handle_process():
-                output_buffer = io.StringIO()
+                output_buffer = []
+                BATCH_SIZE = 50  # Количество строк в одном пакете
+                BATCH_INTERVAL = 0.1  # Интервал между отправками пакетов (в секундах)
+
+                def send_buffer():
+                    if output_buffer:
+                        socketio.emit("console_output", "\n".join(output_buffer), room=sid)
+                        output_buffer.clear()
+                        eventlet.sleep(BATCH_INTERVAL)  # Задержка для обработки клиентом
+
                 while True:
                     try:
                         # Читаем вывод построчно
@@ -210,6 +233,7 @@ sys.path.insert(0, "{}")
                                     and data.get("type") == "input_request"
                                 ):
                                     # Отправляем запрос ввода клиенту
+                                    send_buffer()  # Отправляем накопленный буфер перед запросом ввода
                                     socketio.emit(
                                         "request_input", data["prompt"], room=sid
                                     )
@@ -228,27 +252,31 @@ sys.path.insert(0, "{}")
                                     )
                                     process.stdin.flush()
                                 else:
-                                    # Отправляем обычный вывод клиенту
-                                    socketio.emit("console_output", str(data), room=sid)
+                                    # Добавляем в буфер
+                                    output_buffer.append(str(data))
+                                    if len(output_buffer) >= BATCH_SIZE:
+                                        send_buffer()
                             except json.JSONDecodeError:
                                 # Обычный вывод, не JSON
-                                socketio.emit("console_output", line, room=sid)
+                                output_buffer.append(line)
+                                if len(output_buffer) >= BATCH_SIZE:
+                                    send_buffer()
                     except Exception as e:
-                        socketio.emit(
-                            "console_output", f"Ошибка обработки вывода: {e}", room=sid
-                        )
+                        output_buffer.append(f"Ошибка обработки вывода: {e}")
+                        send_buffer()
+                        break
+
+                # Отправляем оставшийся буфер
+                send_buffer()
 
                 # Собираем ошибки, если есть
                 stderr_output = process.stderr.read()
                 if stderr_output:
                     socketio.emit("console_output", stderr_output, room=sid)
 
-                # Если нет вывода, отправляем сообщение
-                if not output_buffer.getvalue():
-                    print(52222)
-                output_buffer.close()
-
-                # Удаляем временный файл
+                # Очищаем процесс и временный файл
+                if sid in active_processes:
+                    del active_processes[sid]
                 if os.path.exists(temp_file_path):
                     try:
                         os.remove(temp_file_path)
@@ -290,3 +318,33 @@ sys.path.insert(0, "{}")
             del pending_inputs[sid]
         else:
             socketio.emit("console_output", f"\n(Ввод вне запроса: {data})\n", room=sid)
+
+    @socketio.on("stop_execution")
+    def stop_execution():
+        sid = request.sid
+        if sid in active_processes:
+            process, temp_file_path = active_processes[sid]
+            try:
+                # Завершаем процесс
+                process.terminate()
+                process.wait(timeout=1)  # Даём процессу 1 секунду на завершение
+            except subprocess.TimeoutExpired:
+                # Если процесс не завершился, убиваем его
+                process.kill()
+            except Exception as e:
+                socketio.emit("console_output", f"Ошибка при остановке процесса: {e}", room=sid)
+
+            # Очищаем ресурсы
+            del active_processes[sid]
+            if os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except Exception as e:
+                    socketio.emit(
+                        "console_output",
+                        f"Ошибка удаления временного файла: {e}",
+                        room=sid,
+                    )
+            socketio.emit("console_output", "", room=sid)
+        else:
+            socketio.emit("console_output", "", room=sid)

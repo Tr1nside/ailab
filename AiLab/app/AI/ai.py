@@ -16,7 +16,7 @@ from app.base.config import USER_FILES_PATH
 class AI_BOT_V3:
     def __init__(self):
         self.base_path = Path(USER_FILES_PATH)
-        self.global_wish_path = USER_FILES_PATH / "context" / "admin_wish.json"
+        self.global_wish_path = self.base_path / "context" / "admin_wish.json"
         self.tools = AITools().get_all_tools()
         self.tools_name = AITools().get_all_tools_name()
 
@@ -35,7 +35,7 @@ class AI_BOT_V3:
         """
         try:
             # Создаем директорию для файла, если она не существует
-            context_path = context_file
+            context_path = Path(context_file)
             context_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Инициализируем историю чата
@@ -248,7 +248,7 @@ class AI_BOT_V3:
                 tools=self.tools,
                 verbose=True,
                 handle_parsing_errors=True,  # Fixed typo: Fasle -> True
-                max_iterations=10,
+                max_iterations=2,
                 max_execution_time=300,
                 tool_exception_handler=lambda e: f"Ошибка инструмента: {str(e)}",
                 memory_key="history",

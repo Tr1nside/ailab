@@ -3,7 +3,7 @@
         <button class="back-button">←</button>
         <img src="{{ url_for('static', filename='uploads/' + friend.profile.profile_photo) }}" class="contact-avatar">
         <div class="contact-info">
-            <p class="contact-name">{{ friend.profile.full_name }}</p>
+            <p class="contact-name"><a href="{{ url_for('profile_blueprint.profile', id=friend.profile.user_id) }}" class="no-style" >{{ friend.profile.full_name }}</a></p>
             <p class="contact-status">
                 <span
                     class="status-indicator {% if friend.is_online() %}status-online{% else %}status-offline{% endif %}"
