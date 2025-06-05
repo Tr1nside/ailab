@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     action: 'download_file',
                     element: { path: path },
                 };
-                window.location.href = `/api/file-action?${new URLSearchParams({ action: 'download_file', 'element[path]': path })}`;
+                window.location.href = `/api/file-action?action=download_file&path=${encodeURIComponent(path)}`;
                 return;
             default:
                 console.warn('Unknown action:', action);
@@ -294,8 +294,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
             li.addEventListener('dblclick', (e) => {
                 e.stopPropagation();
-                if (li.dataset.type === 'file') {
-                    postData = {
+                const extension = li.dataset.path.split('.').pop().toLowerCase();
+                const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
+                const isImage = imageExtensions.includes(extension);
+                console.log('Двойной клик на:', li.dataset.path, 'Расширение:', extension, 'Это изображение:', isImage);
+
+                if (li.dataset.type === 'file' && !isImage) {
+                    // Существующая логика для не-изображений
+                    const postData = {
                         action: 'read_file',
                         element: { path: li.dataset.path },
                     };
@@ -314,14 +320,18 @@ document.addEventListener('DOMContentLoaded', function () {
                             return response.json();
                         })
                         .then(data => {
-                            console.log('Response data:', data);
+                            console.log('Ответ сервера:', data);
                             if (data.status === 'success') {
                                 window.openFileInTab(li.dataset.path, data.content);
                             } else {
-                                alert(`Ошибка: ${data.message}`);
+                                showNotification(`Ошибка: ${data.message}`);
                             }
+                        })
+                        .catch(error => {
+                            console.error('Ошибка при загрузке файла:', error);
+                            showNotification('Не удалось загрузить файл');
                         });
-                }
+                } 
             });
     
             li.addEventListener('contextmenu', (e) => {

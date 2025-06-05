@@ -16,6 +16,7 @@
                   alt="User profile media"
                   class="profile-photo"
                   id="profile-image"
+                  data-enlargeable
                 />
               </div>
               {% if id == current_user.id %}
@@ -31,51 +32,53 @@
               {% endif %}
             </div>
             <div class="profile-info">
-              <h1 class="profile-name">{{ profile.full_name }}</h1>
-              <p class="profile-email">{{ profile.email }}</p>
-              <p class="profile-phone">{{ profile.phone }}</p>
-              <p class="profile-position" id="user-position">{{ profile.position }}</p>
-              <div class="social-links">
-                {% if profile.telegram_link %}
-                <div class="social-link" id="telegram-container">
-                  <a href="https://t.me/{{ profile.telegram_link.split('/')[-1] }}" 
-                       target="_blank" 
-                       class="social-id" 
-                       id="telegram-id">
-                    <span class="social-label">Telegram:</span>
-                      {{ profile.telegram_link.split('/')[-1] }}
-                  </a>
-                </div>
+                <h1 class="profile-name">{{ profile.full_name }}</h1>
+                <p class="profile-position" id="user-position">{{ profile.position }}</p>
+                <p class="profile-email">{{ profile.email }}</p>
+                {% if profile.phone %}
+                <p class="profile-phone">Тел: {{ profile.phone }}</p>
                 {% endif %}
-              
-                {% if profile.github_link %}
-                <div class="social-link" id="github-container">
-                  <a href="{{ profile.github_link }}" 
-                       target="_blank" 
-                       class="social-id" 
-                       id="github-id">
-                    <span class="social-label">Github:</span>
-                    
-                      {{ profile.github_link.split('/')[-1] }}
-                    
-                  </a>
+                <div class="social-links">
+                    {% if profile.telegram_link %}
+                    <div class="social-link" id="telegram-container">
+                    <a href="https://t.me/{{ profile.telegram_link.split('/')[-1] }}" 
+                        target="_blank" 
+                        class="social-id" 
+                        id="telegram-id">
+                        <span class="social-label">Telegram:</span>
+                        {{ profile.telegram_link.split('/')[-1] }}
+                    </a>
+                    </div>
+                    {% endif %}
+                
+                    {% if profile.github_link %}
+                    <div class="social-link" id="github-container">
+                    <a href="{{ profile.github_link }}" 
+                        target="_blank" 
+                        class="social-id" 
+                        id="github-id">
+                        <span class="social-label">Github:</span>
+                        
+                        {{ profile.github_link.split('/')[-1] }}
+                        
+                    </a>
+                    </div>
+                    {% endif %}
+                
+                    {% if profile.vk_link %}
+                    <div class="social-link" id="vk-container">
+                    <a href="{{ profile.vk_link }}" 
+                        target="_blank" 
+                        class="social-id" 
+                        id="vk-id">
+                        <span class="social-label">Vk:</span>
+                        
+                        {{ profile.vk_link.split('/')[-1] }}
+                        
+                    </a>
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
-              
-                {% if profile.vk_link %}
-                <div class="social-link" id="vk-container">
-                  <a href="{{ profile.vk_link }}" 
-                       target="_blank" 
-                       class="social-id" 
-                       id="vk-id">
-                    <span class="social-label">Vk:</span>
-                    
-                      {{ profile.vk_link.split('/')[-1] }}
-                    
-                  </a>
-                </div>
-                {% endif %}
-              </div>
             </div>
             <div class="qr-code-container">
               {% if profile.qr_photo %}

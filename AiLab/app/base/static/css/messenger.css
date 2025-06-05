@@ -559,3 +559,10 @@ hr {
     /* z-index: 10000; */
     user-select: text;
 }
+
+a.no-style {
+    all: unset; /* Сбрасывает все стили до начальных значений */
+    color: inherit; /* Наследует цвет от родителя */
+    text-decoration: none; /* Убирает подчеркивание */
+    cursor: pointer; 
+}

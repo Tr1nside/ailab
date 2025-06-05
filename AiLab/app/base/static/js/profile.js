@@ -28,11 +28,11 @@ function updateUI() {
   }
 }
 
-modal.addEventListener("click", (e) => {
-  if (e.target === modal) {
-    state.toggleModal();
-  }
-});
+// modal.addEventListener("click", (e) => {
+//   if (e.target === modal) {
+//     state.toggleModal();
+//   }
+// });
 
 document.querySelector(".modal-content").addEventListener("click", (e) => {
   e.stopPropagation();

@@ -739,9 +739,13 @@ tabs.addEventListener('click', (event) => {
 document.addEventListener('DOMContentLoaded', () => {
     const nightModeButton = document.querySelector('.night-mode');
     const downloadBtn = document.getElementById('save-button');
+    const stopButton = document.getElementById('stopExecute');
 
     loadTabsFromLocalStorage();
     loadPresets();
+    stopButton.addEventListener('click', () => {
+        socket.emit('stop_execution');
+    });
 
     downloadBtn.addEventListener('click', () => {
         downloadActiveCodeMirrorContent();

@@ -227,10 +227,15 @@ def _download_file(
     return send_file(file_path, as_attachment=True)
 
 
-@blueprint.route("/api/file-action", methods=["POST"])
+@blueprint.route("/api/file-action", methods=["POST", "GET"])
 @login_required
 def file_action() -> Union[Response, WerkzeugResponse]:
     """Обрабатывает действия с файлами и папками."""
+    if request.method == "GET":
+        action = request.args.get("action")
+        path = request.args.get("path")
+        if action == "download_file" and path:
+            return _download_file(Path(USER_FILES_PATH) / str(current_user.id), {"path": path})
     try:
         data: FileActionRequest = request.get_json()
         action = data.get("action", "")

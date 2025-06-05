@@ -22,12 +22,13 @@
                 <div class="toolbar-left">
                     <button class="toolbarpart1 run-button" onclick="executeCode()"><i><img class="button-icons" src="{{ url_for('static', filename='img/play443.svg') }}"></i></button>
                     <button id="save-button" class="toolbarpart1"><i><img class="button-icons" src="{{ url_for('static', filename='img/save.svg') }}"></i></button>
-                    <button class="toolbarpart1 delete-button" onclick="clearConsole()"><i><img class="button-icons" src="{{ url_for('static', filename='img/del-console.svg') }}"></i></button>
+                    <button class="toolbarpart1 delete-button" id="stopExecute" ><i><img class="button-icons" src="{{ url_for('static', filename='img/del-console.svg') }}"></i></button>
                 </div>
     
                 <button align="center" class="opt-ver-menu-triger">Настройки</button>
     
                 <div class="toolbar-right">
+                    <button class="toolbarpart2 delete-button" onclick="clearConsole()"><i><img class="button-icons" src="{{ url_for('static', filename='img/del-console.svg') }}"></i></button>
                     <button class="toolbarpart2 console-close-button"><i><img class="button-icons" src="{{ url_for('static', filename='img/console.svg') }}"></i></button>
                     <button class="toolbarpart2 download-button" onclick="saveConsoleToFile()"><i><img class="button-icons" src="{{ url_for('static', filename='img/save-console-as-text.svg') }}"></i></button>
                     <button class="toolbarpart2 text-button" onclick="copyToClipboard()"><i><img class="button-icons" src="{{ url_for('static', filename='img/play.svg') }}"></i></button>
