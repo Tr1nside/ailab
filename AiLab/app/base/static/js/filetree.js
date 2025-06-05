@@ -179,7 +179,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     action: 'download_file',
                     element: { path: path },
                 };
-                window.location.href = `/api/file-action?${new URLSearchParams({ action: 'download_file', 'element[path]': path })}`;
+                window.location.href = `/api/file-action?action=download_file&path=${encodeURIComponent(path)}`;
                 return;
             default:
                 console.warn('Unknown action:', action);
@@ -331,49 +331,7 @@ document.addEventListener('DOMContentLoaded', function () {
                             console.error('Ошибка при загрузке файла:', error);
                             showNotification('Не удалось загрузить файл');
                         });
-                } //  else if (li.dataset.type === 'file' && isImage) {
-                //     // Логика для открытия изображений
-                //     const filePath = li.dataset.path;
-                //     const filetreeButton = document.querySelector('.filetree-icon');
-                //     const userId = filetreeButton ? filetreeButton.dataset.userId : null;
-                //     const staticPath = `/user_files/${userId}`;
-                //     const src = `${staticPath}/${filePath}`;
-                //     console.log('URL изображения:', src);
-
-
-                //     console.log('Открываем модальное окно для:', src);
-                //     const modal = document.createElement('div');
-                //     modal.style.cssText = `
-                //         background: rgba(0, 0, 0, 0.9) url(${src}) no-repeat center;
-                //         background-size: contain;
-                //         width: 100%;
-                //         height: 100%;
-                //         position: fixed;
-                //         top: 0;
-                //         left: 0;
-                //         z-index: 100000;
-                //         cursor: zoom-out;
-                //         opacity: 0;
-                //         transition: opacity 0.3s ease;
-                //     `;
-                    
-                //     function closeModal() {
-                //         document.body.removeChild(modal);
-                //         document.removeEventListener('keyup', closeOnEscape);
-                //     }
-                    
-                //     function closeOnEscape(e) {
-                //         if (e.key === 'Escape') {
-                //             closeModal();
-                //         }
-                //     }
-                    
-                //     modal.addEventListener('click', closeModal);
-                //     document.addEventListener('keyup', closeOnEscape);
-                //     document.body.appendChild(modal);
-                //     setTimeout(() => modal.style.opacity = '1', 10);
-                        
-                // }
+                } 
             });
     
             li.addEventListener('contextmenu', (e) => {
