@@ -331,7 +331,32 @@ document.addEventListener('DOMContentLoaded', function () {
                             console.error('Ошибка при загрузке файла:', error);
                             showNotification('Не удалось загрузить файл');
                         });
-                } 
+                } else {
+                    const userId = document.querySelector(".filetree-icon").dataset.userId
+                    const imagePath = window.getUserFileUrl(userId, li.dataset.path);
+                    console.log(imagePath);
+                    
+                    // Создаем div с фоновым изображением
+                    const overlayDiv = document.createElement('div');
+                    overlayDiv.style.cssText = `
+                        background: rgba(0, 0, 0, 0.75) url("${imagePath}") center center / contain no-repeat;
+                        width: 100%;
+                        height: 100%;
+                        position: fixed;
+                        top: 0px;
+                        left: 0px;
+                        z-index: 10000;
+                        cursor: zoom-out;
+                    `;
+                    
+                    // Добавляем обработчик клика для закрытия
+                    overlayDiv.addEventListener('click', function() {
+                        document.body.removeChild(overlayDiv);
+                    });
+                    
+                    // Вставляем div в body
+                    document.body.appendChild(overlayDiv);
+                }
             });
     
             li.addEventListener('contextmenu', (e) => {

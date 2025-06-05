@@ -1039,6 +1039,11 @@ function copyToClipboard() {
 }
 
 document.querySelector('.console-close-button').addEventListener('click', function () {
-    document.querySelector('.console').classList.toggle('close')
-    document.querySelector('.CodeMirror').classList.toggle('console-close')
+    document.querySelector('.console').classList.toggle('close');
+    
+    // Получаем все элементы с классом .CodeMirror и переключаем класс
+    const codeMirrors = document.querySelectorAll('.CodeMirror');
+    codeMirrors.forEach(function(element) {
+        element.classList.toggle('console-close');
+    });
 });
