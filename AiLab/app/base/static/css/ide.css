@@ -526,15 +526,15 @@ body {
 }
 
 .part2-el.open-filetree{
+    transition: 0.5s;
     margin-left: 26vw;
     max-width: 72vw;
-    transition: 0.5s;
 }
 
 .part2-el.open-messenger{
-    margin-right: 26vw; 
-    max-width: 72vw;
     transition: 0.5s;
+    margin-right: 26vw; 
+    max-width: 72vw; 
 }
 
 .part2-el.open-messenger.open-filetree {
