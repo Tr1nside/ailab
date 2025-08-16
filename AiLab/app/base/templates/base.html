@@ -80,9 +80,14 @@
     
     
     <script>
-        const scripts = document.getElementsByTagName('script');
-        const currentScript = scripts[scripts.length - 1].src;
-        console.log(currentScript)
+        window.getUserFileUrl = function(userId, filename) {
+            // Создаем URL с заменой плейсхолдеров
+            const urlTemplate = "{{ url_for('base_blueprint.get_user_file', user_id='_USER_ID_', filename='_FILENAME_') }}";
+            return urlTemplate
+            .replace('_USER_ID_', encodeURIComponent(userId))
+            .replace('_FILENAME_', encodeURIComponent(filename));
+        };;
+        
         function playNotificationSound() {
             const isChatOpen = document.getElementById('messenger-container').classList.contains('open');
             const isWindowFocused = document.hasFocus();

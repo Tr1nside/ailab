@@ -169,10 +169,60 @@ document.addEventListener('DOMContentLoaded', function () {
                 };
                 break;
             case 'read_file':
-                postData = {
-                    action: 'read_file',
-                    element: { path: path },
-                };
+                const extension = path.split('.').pop().toLowerCase();
+                const imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp'];
+                const isImage = imageExtensions.includes(extension);
+                
+                if (isImage) {
+                    // Обработка изображений - как в dblclick
+                    const userId = document.querySelector(".filetree-icon").dataset.userId;
+                    const imagePath = window.getUserFileUrl(userId, path);
+                    
+                    const overlayDiv = document.createElement('div');
+                    overlayDiv.style.cssText = `
+                        background: rgba(0, 0, 0, 0.75) url("${imagePath}") center center / contain no-repeat;
+                        width: 100%;
+                        height: 100%;
+                        position: fixed;
+                        top: 0px;
+                        left: 0px;
+                        z-index: 10000;
+                        cursor: zoom-out;
+                    `;
+                    
+                    overlayDiv.addEventListener('click', function() {
+                        document.body.removeChild(overlayDiv);
+                    });
+                    
+                    document.body.appendChild(overlayDiv);
+                } else {
+                    // Обычная обработка файлов
+                    const postData = {
+                        action: 'read_file',
+                        element: { path: path },
+                    };
+                    
+                    fetch('/api/file-action', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': getCookie('csrf_token'),
+                        },
+                        body: JSON.stringify(postData),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            window.openFileInTab(path, data.content);
+                        } else {
+                            alert(`Ошибка: ${data.message}`);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка:', error);
+                        alert('Не удалось загрузить файл');
+                    });
+                }
                 break;
             case 'download_file':
                 postData = {
@@ -214,7 +264,6 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 console.error('Ошибка:', error);
-                alert('Не удалось выполнить действие');
             });
     }
 
@@ -331,7 +380,32 @@ document.addEventListener('DOMContentLoaded', function () {
                             console.error('Ошибка при загрузке файла:', error);
                             showNotification('Не удалось загрузить файл');
                         });
-                } 
+                } else {
+                    const userId = document.querySelector(".filetree-icon").dataset.userId
+                    const imagePath = window.getUserFileUrl(userId, li.dataset.path);
+                    console.log(imagePath);
+                    
+                    // Создаем div с фоновым изображением
+                    const overlayDiv = document.createElement('div');
+                    overlayDiv.style.cssText = `
+                        background: rgba(0, 0, 0, 0.75) url("${imagePath}") center center / contain no-repeat;
+                        width: 100%;
+                        height: 100%;
+                        position: fixed;
+                        top: 0px;
+                        left: 0px;
+                        z-index: 10000;
+                        cursor: zoom-out;
+                    `;
+                    
+                    // Добавляем обработчик клика для закрытия
+                    overlayDiv.addEventListener('click', function() {
+                        document.body.removeChild(overlayDiv);
+                    });
+                    
+                    // Вставляем div в body
+                    document.body.appendChild(overlayDiv);
+                }
             });
     
             li.addEventListener('contextmenu', (e) => {

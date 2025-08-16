@@ -1,30 +1,26 @@
-from flask import render_template
+from flask import render_template, send_from_directory
 from flask_login import current_user
 from flask_socketio import join_room, leave_room
 from app.base import blueprint
 from app import socketio
 from pathlib import Path
-
+from app.base.config import USER_FILES_PATH
+from urllib.parse import unquote
+import os
 
 @blueprint.route("/")
 @blueprint.route("/index")
 def index():
     return render_template("index.html")
 
-@blueprint.route("/get_user_files_path")
-def get_user_files_path():
-    try:
-        current_dir = Path(__file__).resolve().parent
-        user_files_path = current_dir / "user_files" / str(current_user.id)
-        
-        # Создаем директорию, если ее нет
-        user_files_path.mkdir(exist_ok=True, parents=True)
-        
-        # Явно преобразуем WindowsPath в строку перед возвратом
-        return str(user_files_path)  # Или используйте jsonify({"path": str(user_files_path)})
-    except Exception as e:
-        print(f"ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR \n{e}")
-        return ""
+
+
+@blueprint.route('/user_files/<user_id>/<path:filename>')
+def get_user_file(user_id, filename):
+    parse_filename = unquote(filename)
+    path = os.path.join(USER_FILES_PATH, user_id)
+    return send_from_directory(path, parse_filename)
+
 
 
 @socketio.on("join_user_room")
