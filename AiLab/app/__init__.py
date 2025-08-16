@@ -74,3 +74,4 @@ def create_app(config):
     _configure_database(app)
 
     return app
+
